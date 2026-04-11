@@ -1,32 +1,15 @@
 <script setup>
-import { computed } from 'vue'
-import FormSection from '@/Components/forms/FormSection.vue'
-import FormInput from '@/Components/forms/FormInput.vue'
-import FormSelect from '@/Components/forms/FormSelect.vue'
-import FormDatePicker from '@/Components/forms/FormDatePicker.vue'
-import { Fingerprint } from "lucide-vue-next"
-import {usePage} from "@inertiajs/vue3";
-import PhotoUploader from "@/Pages/modules/patient/components/PhotoUploader.vue";
+
+import FormInput from "@/Components/forms/FormInput.vue";
+import FormTextarea from "@/Components/forms/FormTextarea.vue";
+import FormFileUpload from "@/Components/forms/FormFileUpload.vue";
+import FormDatePicker from "@/Components/forms/FormDatePicker.vue";
 
 const props = defineProps(
     {
         form: Object,
-        gender: Object,
-        maritalStatus:Object,
-        title:Object,
-        triedNext: Boolean,
     })
 
-
-const age = computed(() => {
-    if (!props.form.date_of_birth) return null
-    const birthDate = new Date(props.form.date_of_birth)
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const m = today.getMonth() - birthDate.getMonth()
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--
-    return age
-})
 </script>
 
 <template>
@@ -34,78 +17,49 @@ const age = computed(() => {
 
     <div class="grid grid-cols-12 gap-5">
 
-        <div class="col-span-12">
-            <FormSelect
-                id="title"
-                v-model="form.title"
-                label="Title"
-                required
-                :options="title"
-            />
-        </div>
-
-        <div class="col-span-12 md:col-span-6">
+        <div class="col-span-12 md:col-span-12">
             <FormInput
-                id="surname"
-                v-model="form.surname"
-                label="Surname"
+                id="subject"
+                v-model="form.subject"
+                label="Subject/Title"
                 required
-                :error="form.errors.surname"
-                :tried-next="triedNext"
+                :error="form.errors.subject"
             />
         </div>
 
-        <div class="col-span-12 md:col-span-6">
-            <FormInput
-                id="first_name"
-                v-model="form.first_name"
-                label="First Name"
-                required
-                :error="form.errors.first_name"
-            />
-        </div>
-
-        <div class="col-span-12 md:col-span-6">
-            <FormInput
-                id="middle_name"
-                v-model="form.middle_name"
-                label="Middle Name"
-                :error="form.errors.middle_name"
-            />
-        </div>
-
-        <div class="col-span-12 md:col-span-6">
-            <FormSelect
-                id="gender"
-                v-model="form.gender"
-                label="Gender"
-                required
-                :options="gender"
-            />
-        </div>
-
-        <div class="col-span-12 md:col-span-6">
+        <div class="col-span-12 md:col-span-12">
             <FormDatePicker
-                id="date_of_birth"
-                v-model="form.date_of_birth"
-                label="Date of Birth"
+                id="date_receive"
+                v-model="form.date_receive"
+                label="Date Received"
                 required
-                :error="form.errors.date_of_birth"
+                :error="form.errors.date_receive"
             />
-            <p v-if="age !== null" class="mt-1 text-xs text-green-600 font-medium">
-                Calculated Age: {{ age }} years
-            </p>
         </div>
 
-        <div class="col-span-12 md:col-span-6">
-            <FormSelect
-                id="marital_status"
-                v-model="form.marital_status"
-                label="Marital Status"
-                required
-                :options="maritalStatus"
+        <div class="col-span-12 md:col-span-12">
+            <FormTextarea
+                id="remark"
+                v-model="form.remark"
+                label="Remark"
+                :error="form.errors.remark"
+                :rows="2"
             />
+
         </div>
+
     </div>
+
+        <div class="col-span-12 md:col-span-6">
+            <FormFileUpload
+                v-model="form.scanned_file"
+                :maxFiles="5"
+                accept=".jpg,.jpeg"
+            />
+            <div v-if="form.errors.scanned_file" class="text-red-500 text-xs mt-1">
+                {{ form.errors.scanned_file }}
+            </div>
+        </div>
+
 <!--    </FormSection>-->
 </template>
