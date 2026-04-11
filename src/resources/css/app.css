@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Force the browser to render pure white everywhere */
+html, body, #app {
+    background-color: #ffffff !important;
+    margin: 0;
+    padding: 0;
+}
