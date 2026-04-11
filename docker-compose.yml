@@ -1,10 +1,10 @@
 services:
-  app:
+  care-flow-app:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
       target: development # - Use the dev stage with Xdebug
-    container_name: emr-app
+    container_name: care-flow-app
     volumes:
       - ./src:/var/www
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/app.ini
@@ -12,91 +12,91 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       DB_CONNECTION: pgsql
-      DB_HOST: postgres
+      DB_HOST: care-flow-postgres
       DB_PORT: 5432
-      DB_DATABASE: electronic_medical_record
+      DB_DATABASE: care_flow_system
       DB_USERNAME: postgres
       DB_PASSWORD: admin
     depends_on:
-      - postgres
-      - redis
+      - care-flow-postgres
+      - care-flow-redis
     networks:
-      - emr
+      - care-flow
 
-  horizon:
+  care-flow-horizon:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
       target: development # <--- Keep consistent with app
-    container_name: emr-horizon
+    container_name: care-flow-horizon
     command: php artisan horizon
     restart: unless-stopped
     volumes:
       - ./src:/var/www
     depends_on:
-      - redis
-      - app
+      - care-flow-redis
+      - care-flow-app
     networks:
-      - emr
+      - care-flow
 
-  scheduler:
+  care-flow-scheduler:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
       target: development
-    container_name: emr-scheduler
+    container_name: care-flow-scheduler
     command: php artisan schedule:work
     volumes:
       - ./src:/var/www
     depends_on:
-      - app
-      - redis
+      - care-flow-app
+      - care-flow-redis
     networks:
-      - emr
+      - care-flow
 
-  nginx:
+  care-flow-nginx:
     # Use standard alpine for dev to allow easy volume mounting
     image: nginx:alpine
-    container_name: emr-nginx
+    container_name: care-flow-nginx
     ports:
       - "80:80"
     volumes:
       - ./src/public:/var/www/public # Mount the public folder directly
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - app
+      - care-flow-app
     networks:
-      - emr
+      - care-flow
 
-  postgres:
+  care-flow-postgres:
     image: postgres:16-alpine
-    container_name: emr-postgres
+    container_name: care-flow-postgres
     environment:
-      POSTGRES_DB: electronic_medical_record
+      POSTGRES_DB: care_flow_system
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d electronic_medical_record" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d care_flow_system" ]
       interval: 10s
       timeout: 5s
       retries: 5
     ports:
       - "5432:5432"
     networks:
-      - emr
+      - care-flow
 
-  redis:
+  care-flow-redis:
     image: redis:alpine
-    container_name: emr-redis
+    container_name: care-flow-redis
     ports:
       - "6379:6379"
     networks:
-      - emr
+      - care-flow
 
 networks:
-  emr:
+  care-flow:
 
 volumes:
   pgdata:

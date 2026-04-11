@@ -23,8 +23,8 @@ jobs:
           file: docker/php/Dockerfile
           target: production
           push: true
-          tags: abbeylink/emr-app:${{ github.sha }},abbeylink/emr-app:latest
-          cache-from: type=registry,ref=abbeylink/emr-app:latest
+          tags: abbeylink/emr-app:${{ github.sha }},abbeylink/care-flow-app:latest
+          cache-from: type=registry,ref=abbeylink/care-flow-app:latest
           cache-to: type=inline
       - name: Build Nginx
         uses: docker/build-push-action@v5
@@ -32,15 +32,15 @@ jobs:
           context: .
           file: docker/nginx/Dockerfile
           push: true
-          tags: abbeylink/emr-nginx:${{ github.sha }},abbeylink/emr-nginx:latest
-          cache-from: type=registry,ref=abbeylink/emr-nginx:latest
+          tags: abbeylink/emr-nginx:${{ github.sha }},abbeylink/care-flow-nginx:latest
+          cache-from: type=registry,ref=abbeylink/care-flow-nginx:latest
           cache-to: type=inline
       - name: Deploy
         run: |
           cd /home/bamavalon
           export APP_TAG=${{ github.sha }}
-          docker compose -f docker-compose.emr.yaml pull
-          docker compose -f docker-compose.emr.yaml up -d
+          docker compose -f docker-compose.care-flow.yaml pull
+          docker compose -f docker-compose.care-flow.yaml up -d
           docker image prune -f
-          docker exec emr-app php artisan migrate --force
-          docker exec emr-app php artisan optimize:clear
+          docker exec care-flow-app php artisan migrate --force
+          docker exec care-flow-app php artisan optimize:clear
