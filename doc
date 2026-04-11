@@ -1,0 +1,5 @@
+Element	Color	Why?
+Sidebar / Navbar	secondary-blue (#091E3E)	Provides a solid, professional frame that doesn't distract from the main content.
+Main Action Buttons	primary-blue (#06A3DA)	This is a "high-energy" blue. It makes "Submit," "Save," or "Register" pop off the screen.
+Sidebar Active State	primary-blue (#06A3DA)	Highlights exactly where the user is in the menu.
+Header Text / Icons	secondary-blue (#091E3E)	Great for readability on white backgrounds.
