@@ -23,7 +23,7 @@ jobs:
           file: docker/php/Dockerfile
           target: production
           push: true
-          tags: abbeylink/emr-app:${{ github.sha }},abbeylink/care-flow-app:latest
+          tags: abbeylink/care-flow-app:${{ github.sha }},abbeylink/care-flow-app:latest
           cache-from: type=registry,ref=abbeylink/care-flow-app:latest
           cache-to: type=inline
       - name: Build Nginx
@@ -32,7 +32,7 @@ jobs:
           context: .
           file: docker/nginx/Dockerfile
           push: true
-          tags: abbeylink/emr-nginx:${{ github.sha }},abbeylink/care-flow-nginx:latest
+          tags: abbeylink/care-flow-nginx:${{ github.sha }},abbeylink/care-flow-nginx:latest
           cache-from: type=registry,ref=abbeylink/care-flow-nginx:latest
           cache-to: type=inline
       - name: Deploy
