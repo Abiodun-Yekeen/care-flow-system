@@ -60,7 +60,7 @@ const updateValue = (event) => {
                 'block w-full rounded-md shadow-sm text-sm',
                 hasError
                     ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-secondary/10 focus:border-secondary transition-all',
+                    : 'border-gray-300 focus:ring-primary/10 focus:border-primary transition-all',
                 disabled ? 'bg-gray-100 cursor-not-allowed' : ''
             ]"
         />

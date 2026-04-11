@@ -85,7 +85,7 @@ const calculateAge = () => {
                     'block w-full rounded-md shadow-sm text-sm pl-10',
                     hasError
                         ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-green-600 focus:border-green-600',
+                        : 'border-gray-300 focus:ring-primary/10 focus:border-primary transition-all',
                     disabled ? 'bg-gray-100 cursor-not-allowed' : ''
                 ]"
             />
