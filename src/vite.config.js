@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
     resolve: {
         alias: {
-            '@': '/resources/js',
+            '@': 'resources/js',
             'ziggy-js': '/resources/js/ziggy.js',
         },
     },
