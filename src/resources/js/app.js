@@ -5,7 +5,6 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
-import { Ziggy } from './ziggy';
 import { createPinia } from 'pinia';
 import { useInertiaSync } from "@/Composables/auth/useInertiaSync.js";
 
@@ -20,14 +19,19 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
+        // Initialize sync logic
         const { sync } = useInertiaSync();
 
+        // Create the Vue app
         const app = createApp({ render: () => h(App, props) })
             .use(plugin)
-            .use(ZiggyVue, Ziggy)
-            .use(pinia);
+            .use(ZiggyVue)
+            .use(pinia)
 
+        // Initialize sync
         sync();
+
+        // Mount the app
         app.mount(el);
 
         return app;
@@ -36,3 +40,5 @@ createInertiaApp({
         color: '#4B5563',
     },
 });
+
+
