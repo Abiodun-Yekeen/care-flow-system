@@ -1,12 +1,12 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
-import path from 'path';
+
 export default defineConfig({
     resolve: {
         alias: {
-            // This maps 'ziggy-js' to the actual PHP vendor path
-            'ziggy-js': path.resolve('vendor/tightenco/ziggy'),
+            '@': '/resources/js',
+            'ziggy-js': '/resources/js/ziggy.js',
         },
     },
     plugins: [
@@ -24,3 +24,6 @@ export default defineConfig({
         }),
     ],
 });
+
+
+
