@@ -13,7 +13,6 @@ WORKDIR /var/www
 
 
 #
-#
 ## Build Frontend Assets
 #FROM node:20-alpine AS frontend-builder
 #WORKDIR /app

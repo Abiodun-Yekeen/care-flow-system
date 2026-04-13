@@ -1,0 +1,1 @@
+import{g as a,d as e,t as s,o}from"./app-BgBqLS4C.js";const r={class:"bg-white p-1 border-b shrink-0 z-10"},c={class:"text-2xl font-bold text-[#091E3E]"},i={class:"text-sm text-slate-500"},d={__name:"PageHeader",props:{title:String,subtitle:String},setup(t){return(n,l)=>(o(),a("header",r,[e("h1",c,s(t.title),1),e("p",i,s(t.subtitle),1)]))}};export{d as _};
