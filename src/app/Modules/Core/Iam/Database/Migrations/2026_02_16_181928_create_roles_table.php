@@ -15,6 +15,7 @@ return new class extends Migration
                 $table->id();
                 $table->string('name')->unique();
                 $table->string('description')->nullable();
+                $table->string('display_name')->nullable();
                 $table->boolean('is_system')->default(false);
                 $table->json('metadata')->nullable();
                 $table->timestamps();

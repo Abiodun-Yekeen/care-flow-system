@@ -13,6 +13,22 @@ return new class extends Migration
     {
         Schema::create('file_transfers', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('file_id');
+            $table->foreignId('requesting_department_id');
+            $table->foreignId('requesting_user_id')->nullable();
+
+            $table->foreignId('holding_department_id');
+            $table->foreignId('holding_user_id')->nullable();
+
+            $table->string('status')->default('pending');
+            $table->text('request_note')->nullable();
+            $table->text('response_note')->nullable();
+
+            $table->timestamp('requested_at')->nullable();
+            $table->timestamp('transferred_at')->nullable();
+            $table->timestamp('responded_at')->nullable();
+
             $table->timestamps();
         });
     }
@@ -25,3 +41,10 @@ return new class extends Migration
         Schema::dropIfExists('file_transfers');
     }
 };
+
+
+
+
+
+
+

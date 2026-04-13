@@ -21,6 +21,7 @@ return [
             ['name' => 'Health Information', 'type' => 'admin'],
 
     ],
+
 ],
 
 

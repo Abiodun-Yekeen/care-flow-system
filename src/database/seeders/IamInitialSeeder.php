@@ -42,10 +42,8 @@ class IamInitialSeeder extends Seeder
             ['key' => 'reports', 'module_key' => 'office_files', 'name' => 'Reports'],
 
             // Organization domain
-            ['key' => 'departments', 'module_key' => 'organization', 'name' => 'Departments / MDAs'],
-            ['key' => 'units', 'module_key' => 'organization', 'name' => 'Units / Divisions'],
-            ['key' => 'staff_directory', 'module_key' => 'organization', 'name' => 'Staff Directory'],
-            ['key' => 'designations', 'module_key' => 'organization', 'name' => 'Designations / Ranks'],
+            ['key' => 'departments', 'module_key' => 'organization', 'name' => 'Departments '],
+
 
             // Administration / IAM / Audit
             ['key' => 'users', 'module_key' => 'admin', 'name' => 'User Accounts'],
@@ -291,10 +289,6 @@ class IamInitialSeeder extends Seeder
                 'desc' => 'Base authenticated staff role',
                 'policies' => [$basicUserPolicy->id],
             ],
-            'registry-officer' => [
-                'desc' => 'Registry and intake officer',
-                'policies' => [$basicUserPolicy->id, $registryPolicy->id],
-            ],
             'staff' => [
                 'desc' => 'Operational department staff',
                 'policies' => [$basicUserPolicy->id, $staffPolicy->id],
@@ -341,7 +335,6 @@ class IamInitialSeeder extends Seeder
 
         $baseUserRole = Role::where('name', 'user')->first();
         $specialtyRoles = Role::whereIn('name', [
-            'registry-officer',
             'staff',
             'hod',
             'records-officer',
@@ -365,7 +358,8 @@ class IamInitialSeeder extends Seeder
             ['email' => 'admin@admin.com'],
             [
                 'name' => 'Super Admin',
-                'username' => 'super-admin',
+                'staff_id' => '123',
+                'mobile_no' => '08069318176',
                 'password' => Hash::make('password'),
             ]
         );

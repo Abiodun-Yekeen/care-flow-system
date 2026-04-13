@@ -17,7 +17,26 @@ const props = defineProps(
 
     <div class="grid grid-cols-12 gap-5">
 
-        <div class="col-span-12 md:col-span-12">
+        <div class="col-span-12 md:col-span-6">
+            <FormInput
+                id="source_name"
+                v-model="form.source_name"
+                label="Source Name"
+                required
+                :error="form.errors.source_name"
+                placeholder="Company name"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-6">
+            <FormInput
+                id="source_reference_no"
+                v-model="form.source_reference_no"
+                label="Reference Number"
+                :error="form.errors.source_reference_no"
+                placeholder="Reference No"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-6">
             <FormInput
                 id="subject"
                 v-model="form.subject"
@@ -27,13 +46,13 @@ const props = defineProps(
             />
         </div>
 
-        <div class="col-span-12 md:col-span-12">
+        <div class="col-span-12 md:col-span-6">
             <FormDatePicker
-                id="date_receive"
-                v-model="form.date_receive"
+                id="date_received"
+                v-model="form.date_received"
                 label="Date Received"
                 required
-                :error="form.errors.date_receive"
+                :error="form.errors.date_received"
             />
         </div>
 
@@ -50,7 +69,7 @@ const props = defineProps(
 
     </div>
 
-        <div class="col-span-12 md:col-span-6">
+        <div class="col-span-12 md:col-span-12 pt-2">
             <FormFileUpload
                 v-model="form.scanned_file"
                 :maxFiles="5"
@@ -61,5 +80,4 @@ const props = defineProps(
             </div>
         </div>
 
-<!--    </FormSection>-->
 </template>

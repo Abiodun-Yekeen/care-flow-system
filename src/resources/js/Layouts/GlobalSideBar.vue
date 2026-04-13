@@ -1,5 +1,4 @@
 
-
 <script setup>
 import {
     Dialog,
@@ -13,9 +12,6 @@ import {iconRegistry} from "@/config/Icon.js";
 import { storeToRefs } from "pinia"
 import { useNavigationStore } from "@/core/stores/useNavigationStore.js"
 import {Link} from "@inertiajs/vue3";
-
-
-
 
 const navigationStore = useNavigationStore()
 const { modules } = storeToRefs(navigationStore)

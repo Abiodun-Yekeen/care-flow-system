@@ -2,6 +2,8 @@
 
 namespace App\Modules\Core\Iam\Providers;
 
+use App\Modules\Core\Iam\Repository\Contracts\UserRepositoryInterface;
+use App\Modules\Core\Iam\Repository\Eloquent\UserRepository;
 use App\Modules\Core\Iam\Security\PolicyEvaluator;
 use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Iam\Services\PolicyBuilderService;
@@ -24,6 +26,11 @@ class IamAuthorizationProvider extends ServiceProvider
         $this->app->singleton(PolicyBuilderService::class, function ($app) {
             return new PolicyBuilderService();
         });
+
+        $this->app->bind(
+            UserRepositoryInterface::class,
+            UserRepository::class
+        );
     }
 
     /**

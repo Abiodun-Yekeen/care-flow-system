@@ -13,6 +13,7 @@
         "laravel/horizon": "^5.44",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
+        "maatwebsite/excel": "^3.1",
         "pusher/pusher-php-server": "^7.2",
         "tightenco/ziggy": "^2.0"
     },

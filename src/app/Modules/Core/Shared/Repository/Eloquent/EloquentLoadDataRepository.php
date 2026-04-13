@@ -5,16 +5,7 @@ namespace App\Modules\Core\Shared\Repository\Eloquent;
 
 namespace App\Modules\Core\Shared\Repository\Eloquent;
 
-use App\Modules\Clinical\Encounter\Models\EncounterType;
-use App\Modules\Core\Shared\Models\BloodGroup;
-use App\Modules\Core\Shared\Models\Gender;
-use App\Modules\Core\Shared\Models\Genotype;
-use App\Modules\Core\Shared\Models\Lga;
-use App\Modules\Core\Shared\Models\MaritalStatus;
-use App\Modules\Core\Shared\Models\Relationship;
-use App\Modules\Core\Shared\Models\Severity;
-use App\Modules\Core\Shared\Models\State;
-use App\Modules\Core\Shared\Models\Title;
+use App\Modules\Core\Iam\Models\Role;
 use App\Modules\Core\Shared\Repository\Contracts\LoadDataRepositoryInterface;
 use App\Modules\Organization\Department\Models\Department;
 use Illuminate\Support\Collection;
@@ -31,9 +22,7 @@ class EloquentLoadDataRepository implements LoadDataRepositoryInterface
      * Model mapping for better maintainability
      */
     private const MODEL_MAP = [
-        'genders' => Gender::class,
-        'titles' => Title::class,
-        'marital_statuses' => MaritalStatus::class,
+        'roles' => Role::class,
         'departments'=>Department::class,
     ];
 
@@ -41,25 +30,13 @@ class EloquentLoadDataRepository implements LoadDataRepositoryInterface
      * Field mapping for different data types
      */
     private const FIELD_MAP = [
-        'genders' => ['id','name'],
-        'titles' => ['id','name'],
-        'marital_statuses' => ['id','name'],
         'departments' => ['id', 'name'],
+        'roles' => ['id', 'name'],
     ];
 
-    public function getGenders(): Collection
+    public function getRoles(): Collection
     {
-        return $this->getFormattedOptions('genders');
-    }
-
-    public function getTitles(): Collection
-    {
-        return $this->getFormattedOptions('titles');
-    }
-
-    public function getMaritalStatuses(): Collection
-    {
-        return $this->getFormattedOptions('marital_statuses');
+        return $this->getFormattedOptions('roles');
     }
 
     public function getDepartments(): Collection
@@ -70,10 +47,8 @@ class EloquentLoadDataRepository implements LoadDataRepositoryInterface
     public function getAllFormatted(): array
     {
             return [
-                'gender' => $this->getGenders(),
-                'title' => $this->getTitles(),
-                'marital_status' => $this->getMaritalStatuses(),
                 'departments' => $this->getDepartments(),
+                'roles' => $this->getRoles(),
             ];
     }
     /**

@@ -13,6 +13,19 @@ return new class extends Migration
     {
         Schema::create('file_receives', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->unique();
+
+            $table->foreignId('file_id')->nullable();
+            $table->foreignId('receive_department_id')->nullable();
+            $table->foreignId('created_by')->nullable();
+
+            $table->string('received_from')->nullable();
+            $table->text('remark')->nullable();
+            $table->string('status')->default('draft');
+
+            $table->date('date_received')->nullable();
+            $table->timestamp('submitted_at')->nullable();
+
             $table->timestamps();
         });
     }
@@ -25,3 +38,4 @@ return new class extends Migration
         Schema::dropIfExists('file_receives');
     }
 };
+

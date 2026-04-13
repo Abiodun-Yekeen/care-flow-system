@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+
+
     /**
      * Run the migrations.
      */
@@ -14,13 +16,14 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('username')->unique();
-            $table->string('email')->unique();
-            $table->uuid('staff_id')->nullable();
-            //$table->foreign('staff_id')->references('id')->on('staff');
+            $table->string('staff_id')->unique();
+            $table->string('email')->nullable();
+            $table->string('mobile_no')->unique();
+            $table->foreignId('department_id')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->integer('is_active')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_default_password')->default(true);
             $table->rememberToken();
             $table->string('created_by')->nullable();
             $table->timestamps();

@@ -2,11 +2,12 @@
 
 namespace App\Modules\Organization\Department\Models;
 
-use App\Modules\Billing\service\Models\Service;
+use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Shared\Models\BaseModel;
+use App\Modules\OfficeFiles\File\Models\File;
 use Illuminate\Database\Eloquent\Model;
 
-class Department extends BaseModel
+class Department extends Model
 {
     protected $fillable =[
         'name',
@@ -19,9 +20,15 @@ class Department extends BaseModel
     ];
 
 
-    public function services()
+    public function users()
     {
-        return $this->hasMany(Service::class);
+        return $this->hasMany(User::class);
     }
+
+    public function files()
+    {
+        return $this->hasMany(File::class, 'current_department_id');
+    }
+
 }
 

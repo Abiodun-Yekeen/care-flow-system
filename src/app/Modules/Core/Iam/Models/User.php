@@ -5,6 +5,9 @@ namespace App\Modules\Core\Iam\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Iam\Traits\HasIamRoles;
+use App\Modules\OfficeFiles\File\Models\File;
+use App\Modules\OfficeFiles\Movement\Models\FileMovement;
+use App\Modules\Organization\Department\Models\Department;
 use Database\Factories\Modules\Access\Models\UserFactory;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,9 +28,13 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'staff_id',
+        'mobile_no',
         'email',
+        'department_id',
+        'role',
         'password',
-        'username',
+
     ];
 
     /**
@@ -53,25 +60,7 @@ class User extends Authenticatable
         ];
     }
 
-     protected static function booted()
-    {
-        static::creating(function ($user) {
-            if (empty($user->username)) {
-                //convert name to small letter
-                $base = Str::slug($user->name) ?: 'user';
-                $username = $base;
 
-                $counter = 1;
-                // Check if the base name is already taken
-                while (self::where('username', $username)->exists()) {
-                    $username = $base . '-' . $counter;
-                    $counter++;
-                }
-
-                $user->username = $username;
-            }
-        });
-    }
 
     public function assignRole($role)
     {
@@ -88,8 +77,24 @@ class User extends Authenticatable
     {
         return $this->roles->first()?->name ?? 'Staff';
     }
+    public function files()
+    {
+        return $this->hasMany(File::class, 'current_holder_user_id');
+    }
 
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+    public function createdFiles()
+    {
+        return $this->hasMany(File::class, 'created_by');
+    }
 
+    public function movements()
+    {
+        return $this->hasMany(FileMovement::class, 'acted_by_user_id');
+    }
     protected static function newFactory()
     {
         return UserFactory::new();

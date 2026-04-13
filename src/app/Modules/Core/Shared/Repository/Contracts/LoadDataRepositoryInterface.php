@@ -9,9 +9,7 @@ interface LoadDataRepositoryInterface
     /**
      * Get specific data types
      */
-    public function getGenders(): Collection;
-    public function getTitles(): Collection;
-    public function getMaritalStatuses(): Collection;
+    public function getRoles(): Collection;
     public function getDepartments(): Collection;
 
 }
