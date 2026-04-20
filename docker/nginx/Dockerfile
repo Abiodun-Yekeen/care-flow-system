@@ -13,7 +13,6 @@ WORKDIR /var/www
 
 
 
-#
 ## Build Frontend Assets
 #FROM node:20-alpine AS frontend-builder
 #WORKDIR /app
@@ -30,7 +29,6 @@ WORKDIR /var/www
 #
 ## Copy the built assets from the 'frontend-builder' stage
 #COPY --from=frontend-builder /app/public /var/www/public
-#
-##
+
 #RUN chmod -R 755 /var/www/public
 #WORKDIR /var/www
