@@ -12,6 +12,7 @@ RUN chmod -R 755 /var/www/public
 WORKDIR /var/www
 
 
+
 #
 ## Build Frontend Assets
 #FROM node:20-alpine AS frontend-builder
