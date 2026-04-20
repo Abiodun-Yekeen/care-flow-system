@@ -1,14 +1,11 @@
 <?php
 
-use App\Modules\OfficeFiles\Registry\Http\Controllers\Web\RegistryController;
 
-use App\Modules\OfficeFiles\Registry\Http\Controllers\Web\RegistryOverviewController;
+use App\Modules\Organization\Overview\Http\Controllers\OrganizationController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth')->prefix('registry')->group(function () {
-    Route::get('/', [RegistryOverviewController::class, 'index'])->name('overview.registry');
-    Route::get('temp-files', [RegistryController::class, 'temporaryFile'])->name('temp.file');
-    Route::resource('register', RegistryController::class);
+Route::middleware('auth')->prefix('org')->group(function () {
+    Route::get('/', [OrganizationController::class, 'index'])->name('overview.org');
 
 });
 

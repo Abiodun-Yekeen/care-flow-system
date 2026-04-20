@@ -44,7 +44,6 @@ const tableColumns = [
     { label: 'Roles' },
     { label: 'Status' },
 ]
-
 const handleSearch = () => {
     router.get(route('users.index'), {
         search: search.value
@@ -105,7 +104,7 @@ const handleSearch = () => {
                         </td>
 
                         <td class="px-6 py-4 text-sm text-slate-700">
-                            {{ user.department?.name || 'Unassigned' }}
+                         {{ user.primary_department?.name || 'Unassigned' }}
                         </td>
 
                         <td class="px-6 py-4">

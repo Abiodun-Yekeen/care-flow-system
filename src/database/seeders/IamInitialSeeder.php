@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Modules\Core\Iam\Models\Resource;
 use App\Modules\Core\Iam\Models\Role;
-use App\Modules\Core\Iam\Models\Policy;
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Services\PolicyBuilderService;
 use Illuminate\Database\Seeder;
@@ -12,358 +11,161 @@ use Illuminate\Support\Facades\Hash;
 
 class IamInitialSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(PolicyBuilderService $builder): void
     {
         /*
         |--------------------------------------------------------------------------
-        | 1. REGISTER RESOURCES
+        | 1. REGISTER HIERARCHICAL RESOURCES
         |--------------------------------------------------------------------------
-        | These are the dictionary entries used by IAM, sidebar seeding, and ARN
-        | resolution. Keep them aligned with your business modules, not old EMR.
         */
 
         $resources = [
-            // Dashboard / work areas
-            ['key' => 'dashboard', 'module_key' => 'dashboard', 'name' => 'Dashboard'],
-            ['key' => 'my_desk', 'module_key' => 'office_files', 'name' => 'My Desk'],
-
-            // OfficeFiles domain
-            ['key' => 'registry', 'module_key' => 'office_files', 'name' => 'Registry'],
-            ['key' => 'receive_register', 'module_key' => 'office_files', 'name' => 'Receive & Register File'],
-            ['key' => 'temporary_files', 'module_key' => 'office_files', 'name' => 'Temporary Files'],
-            ['key' => 'files', 'module_key' => 'office_files', 'name' => 'Files'],
-            ['key' => 'routing', 'module_key' => 'office_files', 'name' => 'Routing'],
-            ['key' => 'movement_history', 'module_key' => 'office_files', 'name' => 'Movement History'],
-            ['key' => 'tracking', 'module_key' => 'office_files', 'name' => 'Tracking & Audit'],
-            ['key' => 'documents', 'module_key' => 'office_files', 'name' => 'File Documents'],
-            ['key' => 'reports', 'module_key' => 'office_files', 'name' => 'Reports'],
-
-            // Organization domain
-            ['key' => 'departments', 'module_key' => 'organization', 'name' => 'Departments '],
-
-
-            // Administration / IAM / Audit
-            ['key' => 'users', 'module_key' => 'admin', 'name' => 'User Accounts'],
-            ['key' => 'roles', 'module_key' => 'admin', 'name' => 'Roles'],
-            ['key' => 'policies', 'module_key' => 'admin', 'name' => 'Policies'],
-            ['key' => 'modules', 'module_key' => 'admin', 'name' => 'Module Manager'],
-            ['key' => 'audit_logs', 'module_key' => 'admin', 'name' => 'Audit Logs'],
-            ['key' => 'system_settings', 'module_key' => 'admin', 'name' => 'System Settings'],
+            ['key' => 'dashboard',         'module_key' => 'dashboard',    'name' => 'Dashboard'],
+            ['key' => 'my_desk',           'module_key' => 'office_files', 'name' => 'Work Desk'],
+            ['key' => 'registry',          'module_key' => 'office_files', 'name' => 'Registry Intake'],
+            ['key' => 'temporary_files',   'module_key' => 'office_files', 'name' => 'Temporary Files'],
+            ['key' => 'files',             'module_key' => 'office_files', 'name' => 'File Records'],
+            ['key' => 'documents',         'module_key' => 'office_files', 'name' => 'Scanned Documents'], // Added
+            ['key' => 'routing',           'module_key' => 'office_files', 'name' => 'File Routing/Movements'], // Added
+            ['key' => 'tracking',          'module_key' => 'office_files', 'name' => 'Tracking & Audit'],
+            ['key' => 'organization',      'module_key' => 'organization', 'name' => 'Organization Management'],
+            ['key' => 'admin',             'module_key' => 'admin',        'name' => 'System Administration'],
         ];
 
         foreach ($resources as $res) {
-            Resource::firstOrCreate(
-                ['key' => $res['key']],
-                $res
-            );
+            Resource::firstOrCreate(['key' => $res['key']], $res);
         }
-
         /*
         |--------------------------------------------------------------------------
         | 2. DEFINE POLICIES
         |--------------------------------------------------------------------------
         */
 
-        // A. BASIC USER POLICY
+        // BASIC ACCESS (Everyone gets Dashboard)
         $basicUserPolicy = $builder->new()
-            ->statement('self-service')
-            ->allow()
-            ->action(['view_own', 'update_own'])
-            ->resource(['arn:cf:admin:users/${user_id}'])
-            ->end()
-            ->statement('dashboard-access')
-            ->allow()
-            ->action(['view'])
-            ->resource([
-                'arn:cf:dashboard:*',
-                'arn:cf:office_files:my_desk:*',
-            ])
-            ->end()
-            ->create('BasicUserPolicy', 'Minimum access for all authenticated staff');
+            ->statement('base')
+            ->allow()->action(['view'])->resource(['arn:cf:core:dashboard:*'])
+            ->end()->create('BasicUserPolicy', 'Core access');
 
-        // B. REGISTRY POLICY
+        // REGISTRY (Intake + Tracking visibility)
         $registryPolicy = $builder->new()
-            ->statement('registry-intake')
-            ->allow()
-            ->action([
-                'view',
-                'create',
-                'submit',
-                'search',
-                'upload',
-                'attach_document',
-            ])
+            ->statement('intake')
+            ->allow()->action(['view_dept', 'create', 'submit', 'upload'])
             ->resource([
                 'arn:cf:office_files:registry:*',
-                'arn:cf:office_files:receive_register:*',
-                'arn:cf:office_files:documents:*',
+                'arn:cf:office_files:temporary_files:*'
             ])
             ->end()
-            ->statement('temporary-number-handling')
-            ->allow()
-            ->action(['view', 'create_temp', 'convert_temp'])
-            ->resource([
-                'arn:cf:office_files:temporary_files:*',
-                'arn:cf:office_files:files:*',
-            ])
-            ->end()
-            ->statement('route-to-hod-only')
-            ->allow()
-            ->action(['route_to_hod'])
-            ->resource(['arn:cf:office_files:routing:*'])
-            ->end()
-            ->create('RegistryPolicy', 'Registry intake, registration, scan upload, temp numbering, and submission to HOD');
+            ->statement('registry-tracking')
+            ->allow()->action(['view_dept_history', 'search_dept'])
+            ->resource(['arn:cf:office_files:tracking:*']) // Can check movement for people
+            ->end()->create('RegistryPolicy', 'Registry operations and departmental tracking');
 
-        // C. STAFF POLICY
+        // STAFF (Work Desk + File Processing)
         $staffPolicy = $builder->new()
-            ->statement('desk-processing')
-            ->allow()
-            ->action([
-                'view',
-                'receive',
-                'treat',
-                'update',
-                'attach_document',
-            ])
-            ->resource([
-                'arn:cf:office_files:my_desk:*',
-                'arn:cf:office_files:files:*',
-                'arn:cf:office_files:documents:*',
-            ])
+            ->statement('work-desk')
+            ->allow()->action(['view'])
+            ->resource(['arn:cf:office_files:my_desk:*']) // Needed to see the in-tray
             ->end()
-            ->statement('staff-routing')
-            ->allow()
-            ->action(['route_to_hod'])
+            ->statement('file-processing')
+            ->allow()->action(['view_assigned', 'treat', 'attach_document'])
+            ->resource(['arn:cf:office_files:files:*', 'arn:cf:office_files:documents:*'])
+            ->end()
+            ->statement('route')
+            ->allow()->action(['route_to_hod'])
             ->resource(['arn:cf:office_files:routing:*'])
-            ->end()
-            ->statement('deny-close-and-cross-department')
-            ->deny()
-            ->action(['close', 'route_to_department', 'route_to_staff'])
-            ->resource(['arn:cf:office_files:routing:*'])
-            ->end()
-            ->create('StaffPolicy', 'Operational staff processing with upward routing to HOD only');
+            ->end()->create('StaffPolicy', 'Operational processing for assigned files');
 
-        // D. HOD POLICY
+        // HOD
         $hodPolicy = $builder->new()
-            ->statement('hod-file-processing')
-            ->allow()
-            ->action([
-                'view',
-                'receive',
-                'treat',
-                'update',
-                'close',
-                'attach_document',
-            ])
-            ->resource([
-                'arn:cf:office_files:my_desk:*',
-                'arn:cf:office_files:files:*',
-                'arn:cf:office_files:documents:*',
-            ])
-            ->end()
-            ->statement('hod-routing')
-            ->allow()
-            ->action([
-                'route_to_staff',
-                'route_to_department',
-                'route_to_hod',
-                'return_item',
-            ])
-            ->resource(['arn:cf:office_files:routing:*'])
-            ->end()
-            ->statement('hod-tracking')
-            ->allow()
-            ->action(['view', 'export'])
-            ->resource([
-                'arn:cf:office_files:tracking:*',
-                'arn:cf:office_files:movement_history:*',
-            ])
-            ->end()
-            ->statement('hod-org-read')
-            ->allow()
-            ->action(['view'])
-            ->resource([
-                'arn:cf:organization:departments:*',
-                'arn:cf:organization:units:*',
-                'arn:cf:organization:staff_directory:*',
-                'arn:cf:organization:designations:*',
-            ])
-            ->end()
-            ->create('HodPolicy', 'Departmental head processing, routing, closure, and oversight');
+            ->statement('control')
+            ->allow()->action(['view_dept', 'treat', 'close', 'merge_file', 'request_external'])
+            ->resource(['arn:cf:office_files:*', 'arn:cf:office_files:my_desk:*'])
+            ->end()->create('HodPolicy', 'Departmental head management');
 
-        // E. RECORDS OFFICER POLICY
-        $recordsOfficerPolicy = $builder->new()
-            ->statement('records-tracking')
-            ->allow()
-            ->action(['view', 'export'])
-            ->resource([
-                'arn:cf:office_files:tracking:*',
-                'arn:cf:office_files:movement_history:*',
-                'arn:cf:office_files:reports:*',
-            ])
+        // DMS / DIRECTOR (Global Power + Work Desk)
+        $dmsPolicy = $builder->new()
+            ->statement('desk-access')
+            ->allow()->action(['view'])
+            ->resource(['arn:cf:office_files:my_desk:*'])
             ->end()
-            ->statement('records-registry-support')
-            ->allow()
-            ->action(['view', 'search', 'convert_temp'])
-            ->resource([
-                'arn:cf:office_files:registry:*',
-                'arn:cf:office_files:temporary_files:*',
-                'arn:cf:office_files:files:*',
+            ->statement('executive-power')
+            ->allow()->action([
+                'view_all',
+                'merge_file',
+                'reopen_file',
+                'convert_temp',
+                'open_permanent_file',
+                'reactivate_file'
             ])
-            ->end()
-            ->create('RecordsOfficerPolicy', 'Records supervision, tracking, temp conversion, and registry support');
+            ->resource(['arn:cf:office_files:files:*'])
+            ->end()->create('DmsPolicy', 'High-level DMS oversight and file reactivation');
 
-        // F. AUDITOR POLICY
+        // SYSTEM ADMIN
+        $systemAdminPolicy = $builder->new()
+            ->statement('manage-system')
+            ->allow()->action(['*'])
+            ->resource(['arn:cf:admin:*', 'arn:cf:org:*'])
+            ->end()->create('SystemAdminPolicy', 'Technical management');
+
+        // AUDITOR
         $auditorPolicy = $builder->new()
             ->statement('oversight')
-            ->allow()
-            ->action(['view_*', 'list_*', 'export_*', 'generate_report'])
-            ->resource([
-                'arn:cf:office_files:tracking:*',
-                'arn:cf:office_files:movement_history:*',
-                'arn:cf:office_files:reports:*',
-                'arn:cf:admin:audit_logs:*',
-            ])
-            ->end()
-            ->statement('deny-mutation')
-            ->deny()
-            ->action(['create_*', 'update_*', 'delete_*', 'route_*', 'close'])
-            ->resource(['*'])
-            ->end()
-            ->create('AuditorPolicy', 'Read-only institutional oversight and audit access');
+            ->allow()->action(['view_all', 'export_all', 'view_all_history'])
+            ->resource(['arn:cf:office_files:*', 'arn:cf:admin:audit_logs:*'])
+            ->end()->create('AuditorPolicy', 'Read-only audit access');
 
-        // G. SYSTEM ADMIN POLICY
-        $adminPolicy = $builder->new()
-            ->statement('manage-administration')
-            ->allow()
-            ->action(['*'])
-            ->resource([
-                'arn:cf:admin:users:*',
-                'arn:cf:admin:roles:*',
-                'arn:cf:admin:policies:*',
-                'arn:cf:admin:modules:*',
-                'arn:cf:admin:audit_logs:*',
-                'arn:cf:admin:system_settings:*',
-                'arn:cf:organization:*',
-            ])
-            ->end()
-            ->statement('operational-read')
-            ->allow()
-            ->action(['view', 'list', 'export'])
-            ->resource([
-                'arn:cf:office_files:registry:*',
-                'arn:cf:office_files:files:*',
-                'arn:cf:office_files:routing:*',
-                'arn:cf:office_files:tracking:*',
-                'arn:cf:office_files:movement_history:*',
-                'arn:cf:office_files:reports:*',
-            ])
-            ->end()
-            ->statement('deny-regular-file-processing')
-            ->deny()
-            ->action(['treat', 'route_to_hod', 'route_to_staff', 'route_to_department', 'close'])
-            ->resource(['arn:cf:office_files:routing:*'])
-            ->end()
-            ->create('SystemAdminPolicy', 'Technical and administrative control without day-to-day operational routing power');
-
-        // H. SUPER ADMIN POLICY
         $superAdminPolicy = $builder->new()
-            ->statement('root-access')
+            ->statement('root')
             ->allow()
             ->action(['*'])
             ->resource(['*'])
             ->end()
-            ->create('SuperAdminPolicy', 'Absolute system access');
-
+            ->create('SuperAdminPolicy', 'Full system access');
         /*
         |--------------------------------------------------------------------------
-        | 3. DEFINE ROLES & ATTACH POLICIES
+        | 3. DEFINE ROLES
         |--------------------------------------------------------------------------
         */
-
         $rolesConfig = [
-            'user' => [
-                'desc' => 'Base authenticated staff role',
-                'policies' => [$basicUserPolicy->id],
-            ],
-            'staff' => [
-                'desc' => 'Operational department staff',
-                'policies' => [$basicUserPolicy->id, $staffPolicy->id],
-            ],
-            'hod' => [
-                'desc' => 'Head of Department',
-                'policies' => [$basicUserPolicy->id, $hodPolicy->id],
-            ],
-            'records-officer' => [
-                'desc' => 'Records management officer',
-                'policies' => [$basicUserPolicy->id, $recordsOfficerPolicy->id],
-            ],
-            'auditor' => [
-                'desc' => 'Audit and oversight officer',
-                'policies' => [$basicUserPolicy->id, $auditorPolicy->id],
-            ],
-            'system-admin' => [
-                'desc' => 'Technical system administrator',
-                'policies' => [$basicUserPolicy->id, $adminPolicy->id],
-            ],
-            'super-admin' => [
-                'desc' => 'Developer / root access',
-                'policies' => [$superAdminPolicy->id],
-            ],
+            'super-admin' => ['display' => 'Super Administrator', 'policies' => ['*']],
+            'system-admin' => ['display' => 'System Administrator', 'policies' => [$systemAdminPolicy->id]],
+            'director' => ['display' => 'Director / DMS', 'policies' => [$dmsPolicy->id, $auditorPolicy->id]],
+            'hod' => ['display' => 'Head of Department', 'policies' => [$hodPolicy->id]],
+            'registry-clerk' => ['display' => 'Registry Clerk', 'policies' => [$registryPolicy->id]],
+            'staff' => ['display' => 'Staff Officer', 'policies' => [$staffPolicy->id]],
+            'auditor' => ['display' => 'Internal Auditor', 'policies' => [$auditorPolicy->id]],
         ];
 
-        foreach ($rolesConfig as $name => $data) {
-            $role = Role::firstOrCreate(
-                ['name' => $name],
-                [
-                    'description' => $data['desc'],
-                    'is_system' => true,
-                ]
-            );
+        foreach ($rolesConfig as $slug => $data) {
+            $role = Role::firstOrCreate(['name' => $slug], [
+                'display_name' => $data['display'],
+                'is_system' => true
+            ]);
 
-            $role->policies()->sync($data['policies']);
+            if ($data['policies'] === ['*']) {
+                $role->policies()->sync([$superAdminPolicy->id]);
+            } else {
+                $role->policies()->sync(array_merge($data['policies'], [$basicUserPolicy->id]));
+            }
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | 4. ROLE INHERITANCE
-        |--------------------------------------------------------------------------
-        */
-
-        $baseUserRole = Role::where('name', 'user')->first();
-        $specialtyRoles = Role::whereIn('name', [
-            'staff',
-            'hod',
-            'records-officer',
-            'auditor',
-            'system-admin',
-        ])->get();
-
-        foreach ($specialtyRoles as $role) {
-            $role->attachParent($baseUserRole);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | 5. DEFAULT SUPER ADMIN USER
-        |--------------------------------------------------------------------------
-        */
 
         $superAdminRole = Role::where('name', 'super-admin')->first();
 
         $adminUser = User::updateOrCreate(
             ['email' => 'admin@admin.com'],
             [
-                'name' => 'Super Admin',
-                'staff_id' => '123',
-                'mobile_no' => '08069318176',
-                'password' => Hash::make('password'),
+                'name'      => 'Super Admin',
+                'staff_id'  => 'ROOT-001',
+                'mobile_no' => '08000000000',
+                'password'  => '$2y$12$Nb9Tjy9EnSe5roaVB5vFaOH91uoySy6kpZ5lihnk7P9hkoqkJK2Q2',
+                'email_verified_at' => now(),
             ]
         );
 
-        $adminUser->roles()->syncWithoutDetaching([$superAdminRole->id]);
+        // This will now work perfectly
+        $adminUser->roles()->sync([$superAdminRole->id]);
     }
+
 }
+

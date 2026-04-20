@@ -12,16 +12,19 @@ class CreateAuditPartition extends Command
 
     public function handle()
     {
-        $nextMonth = Carbon::now()->addMonth();
-        $start = $nextMonth->startOfMonth()->format('Y-m-d');
-        $end = $nextMonth->endOfMonth()->addDay()->format('Y-m-d');
+        // Check both This Month and Next Month
+        $months = collect(range(0, 3))->map(fn ($i) => now()->addMonths($i));
 
-        $tableName = 'audit_logs_' . $nextMonth->format('Y_m');
+        foreach ($months as $date) {
+            $start = $date->copy()->startOfMonth()->toDateTimeString();
+            $end = $date->copy()->addMonth()->startOfMonth()->toDateTimeString();
+            $tableName = 'audit_logs_' . $date->format('Y_m');
 
-        DB::statement("
-            CREATE TABLE IF NOT EXISTS {$tableName}
-            PARTITION OF audit_logs
-            FOR VALUES FROM ('{$start}') TO ('{$end}');
-        ");
+            DB::statement("
+        CREATE TABLE IF NOT EXISTS {$tableName}
+        PARTITION OF audit_logs
+        FOR VALUES FROM ('{$start}') TO ('{$end}');
+    ");
+        }
     }
 }

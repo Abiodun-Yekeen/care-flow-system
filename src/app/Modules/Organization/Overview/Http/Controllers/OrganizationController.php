@@ -9,6 +9,6 @@ class OrganizationController extends Controller
 
     public function index()
     {
-        return Inertia::render('organization/Overview/Index', []);
+        return Inertia::render('modules/overview/ModuleOverview', []);
     }
 }

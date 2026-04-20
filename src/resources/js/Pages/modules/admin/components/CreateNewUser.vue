@@ -66,16 +66,7 @@ const props = defineProps(
                 :error="form.errors.department"
             />
         </div>
-        <div class="col-span-12 md:col-span-6">
-            <FormSelect
-                id="role"
-                v-model="form.role"
-                label="Roles"
-                required
-                :options="role"
-                :error="form.errors.role"
-            />
-        </div>
+
 
 
     </div>

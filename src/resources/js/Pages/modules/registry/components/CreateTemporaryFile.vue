@@ -4,10 +4,12 @@ import FormInput from "@/Components/forms/FormInput.vue";
 import FormTextarea from "@/Components/forms/FormTextarea.vue";
 import FormFileUpload from "@/Components/forms/FormFileUpload.vue";
 import FormDatePicker from "@/Components/forms/FormDatePicker.vue";
+import FormPriority from "@/Components/forms/FormPriority.vue";
 
 const props = defineProps(
     {
         form: Object,
+        min: String
     })
 
 </script>
@@ -55,8 +57,7 @@ const props = defineProps(
                 :error="form.errors.date_received"
             />
         </div>
-
-        <div class="col-span-12 md:col-span-12">
+        <div class="col-span-12 md:col-span-6">
             <FormTextarea
                 id="remark"
                 v-model="form.remark"
@@ -66,7 +67,25 @@ const props = defineProps(
             />
 
         </div>
+        <div class="col-span-12 md:col-span-6">
+            <FormDatePicker
+                id="deadline_at"
+                v-model="form.deadline_at"
+                label="Deadline Date"
+                :error="form.errors.deadline_at"
+                :min="min"
 
+            />
+        </div>
+
+
+
+        <div class="col-span-12 md:col-span-12 pt-2">
+        <FormPriority
+            v-model="form.priority"
+            :error="form.errors.priority"
+        />
+        </div>
     </div>
 
         <div class="col-span-12 md:col-span-12 pt-2">

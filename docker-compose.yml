@@ -30,7 +30,7 @@ services:
       target: development # <--- Keep consistent with app
     container_name: care-flow-horizon
     command: php artisan horizon
-    restart: unless-stopped
+    restart: always
     volumes:
       - ./src:/var/www
     depends_on:
@@ -38,6 +38,27 @@ services:
       - care-flow-app
     networks:
       - care-flow
+
+  care-flow-reverb:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: development
+    container_name: care-flow-reverb
+    restart: always
+    working_dir: /var/www
+    volumes:
+        - ./src:/var/www
+    # Reverb needs the env vars to know its keys/host
+    env_file: ./src/.env
+    # Map the Reverb port so your browser can connect
+    ports:
+      - "${VITE_REVERB_PORT:-8080}:8080"
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    networks:
+      - care-flow
+    depends_on:
+      - care-flow-redis
 
   care-flow-scheduler:
     build:
@@ -61,10 +82,11 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./src/public:/var/www/public # Mount the public folder directly
+      - ./src:/var/www # Mount the public folder directly
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - care-flow-app
+      - care-flow-reverb
     networks:
       - care-flow
 

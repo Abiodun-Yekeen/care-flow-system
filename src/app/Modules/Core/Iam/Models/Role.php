@@ -14,6 +14,7 @@ class Role extends Model
     protected $casts = [
         'is_system' => 'boolean',
         'metadata' => 'array',
+        'created_at' => 'datetime:Y-m-d H:i'
     ];
 
     private ?RoleHierarchyResolver $hierarchyResolver = null;
@@ -38,7 +39,6 @@ class Role extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'user_roles')
-            ->withPivot('metadata')
             ->withTimestamps();
     }
 

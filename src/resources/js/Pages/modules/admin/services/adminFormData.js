@@ -9,4 +9,9 @@ export const userForm = {
     role:''
 }
 
+export const RoleForm = {
+    name:'',
+    display_name:'',
+    description:'',
+}
 

@@ -34,18 +34,16 @@ return [
 
         'registry' => [
             'key' => 'registry',
-            'label' => 'Registry',
+            'label' => 'Incoming Registry', // More descriptive
             'route' => '/registry',
-            'icon' => 'folder-plus',
+            'icon' => 'inbox',
             'order' => 2,
-            'actions' => ['view'],
             'children' => [
                 [
                     'key' => 'receive_register',
                     'label' => 'Receive & Register File',
                     'route' => '/registry/register',
-                    'icon' => 'inbox',
-                    'order' => 1,
+                    'icon' => 'plus-circle',
                     'actions' => ['view', 'create', 'submit'],
                 ],
                 [
@@ -53,94 +51,76 @@ return [
                     'label' => 'Temporary Files',
                     'route' => '/registry/temp-files',
                     'icon' => 'file-clock',
-                    'order' => 2,
-                    'actions' => ['view', 'convert'],
+                    'actions' => ['view', 'update', 'submit'],
                 ],
             ],
         ],
 
         'my_desk' => [
             'key' => 'my_desk',
-            'label' => 'My Desk',
+            'label' => 'Work Desk',
             'route' => '/my-desk',
             'icon' => 'briefcase',
             'order' => 3,
-            'actions' => ['view'],
+            'children' => [
+                [
+                    'key' => 'my_files',
+                    'label' => 'My In-Tray', // Files currently with the user
+                    'route' => '/my-desk/files',
+                    'icon' => 'file-text',
+                ],
+                [
+                    'key' => 'movement_history', // Moved from Tracking for better context
+                    'label' => 'My File History',
+                    'route' => '/my-desk/history',
+                    'icon' => 'history',
+                ],
+                [
+                    'key' => 'file_documents',
+                    'label' => 'My Documents',
+                    'route' => '/my-desk/documents',
+                    'icon' => 'files',
+                    'actions' => ['view', 'search', 'download'],
+                ],
+            ],
         ],
 
-        'tracking' => [
+        // Global Admin/Audit section
+        'system_tracking' => [
             'key' => 'tracking',
-            'label' => 'Tracking & Audit',
+            'label' => 'Global Tracking',
             'route' => '/tracking',
             'icon' => 'map-pin',
             'order' => 4,
-            'actions' => ['view'],
             'children' => [
-                [
-                    'key' => 'movement_history',
-                    'label' => 'Movement History',
-                    'route' => '/tracking/movement',
-                    'icon' => 'history',
-                    'order' => 1,
-                    'actions' => ['view', 'export'],
-                ],
-                [
-                    'key' => 'current_location',
-                    'label' => 'Current Location',
-                    'route' => '/tracking/location',
-                    'icon' => 'map-pinned',
-                    'order' => 2,
-                    'actions' => ['view'],
-                ],
-                [
-                    'key' => 'processing_delays',
-                    'label' => 'Delayed Processing',
-                    'route' => '/tracking/delays',
-                    'icon' => 'triangle-alert',
-                    'order' => 3,
-                    'actions' => ['view'],
-                ],
-                [
-                    'key' => 'audit_trail',
-                    'label' => 'Audit Trail',
-                    'route' => '/tracking/audit',
-                    'icon' => 'shield-check',
-                    'order' => 4,
-                    'actions' => ['view', 'export'],
-                ],
-            ],
+                ['key' => 'current_location', 'label' => 'Find Any File', 'route' => '/tracking/location', 'icon' => 'search'],
+                ['key' => 'processing_delays', 'label' => 'System Bottlenecks', 'route' => '/tracking/delays', 'icon' => 'clock-alert'],
+            ]
         ],
 
         'organization' => [
             'key' => 'organization',
             'label' => 'Organization',
             'icon' => 'building',
-            'route' => '/organization',
+            'route' => '/org',
             'order' => 5,
             'actions' => ['view'],
             'children' => [
                 [
                     'key' => 'departments',
                     'label' => 'Departments / MDAs',
-                    'route' => '/organization/departments',
+                    'route' => '/org/departments',
                     'icon' => 'building-2',
                     'order' => 1,
                     'actions' => ['view', 'create', 'update'],
                 ],
-                [
-                    'key' => 'units',
-                    'label' => 'Units / Divisions',
-                    'route' => '/organization/units',
-                    'icon' => 'blocks',
-                    'order' => 2,
-                    'actions' => ['view', 'create', 'update'],
-                ],
+
                 [
                     'key' => 'staff_directory',
                     'label' => 'Staff Directory',
-                    'route' => '/organization/staff',
+                    'route' => '/org/staff',
                     'icon' => 'users',
-                    'order' => 3,
+                    'order' => 2,
                     'actions' => ['view', 'create', 'update'],
                 ],
             ],
@@ -290,3 +270,6 @@ return [
     ],
 
 ];
+
+
+

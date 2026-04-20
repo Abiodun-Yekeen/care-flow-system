@@ -10,7 +10,7 @@ defineProps({ name: String, email: String })
         </div>
         <div>
             <div class="font-bold text-[#091E3E] text-sm">{{ name }}</div>
-            <div class="text-[11px] text-slate-500 flex items-center gap-1">
+            <div v-if="email" class="text-[11px] text-slate-500 flex items-center gap-1">
                 <Mail :size="10" /> {{ email }}
             </div>
         </div>

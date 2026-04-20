@@ -8,7 +8,7 @@ interface ModuleRepositoryInterface
 
     public function getRootModules(array $keys): Collection;
 
-    public function getChildrenByParentKey(string $parentKey): Collection;
+    public function getChildrenByParentRouteSegment(string $segment): Collection;
 
     public function findByKey(string $key): ?object;
 }

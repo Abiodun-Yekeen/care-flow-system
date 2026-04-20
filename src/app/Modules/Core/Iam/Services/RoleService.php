@@ -3,8 +3,10 @@
 namespace App\Modules\Core\Iam\Services;
 
 use App\Modules\Core\Iam\DTO\UserDTO;
+use App\Modules\Core\Iam\Models\Role;
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Repository\Contracts\UserRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Facades\Excel;
@@ -12,62 +14,54 @@ use Maatwebsite\Excel\Facades\Excel;
 class RoleService
 {
     public function __construct(
-        Private UserRepositoryInterface $userRepo
+        Private Role  $role,
     )
     {}
 
-    public function createUser(UserDTO $dto)
+    public function createRole(array $data)
     {
-        return DB::transaction(function () use ($dto) {
-            $password = Hash::make( 'password123');
-            $user = $this->userRepo->create([
-                'name' => $dto->name,
-                'staff_id' => $dto->staff_id,
-                'mobile_no' => $dto->mobile_no,
-                'email' => $dto->email,
-                'department_id' => $dto->department_id,
-                'password' => $password,
+        return DB::transaction(function () use ($data) {
+            $role = $this->role->create([
+                'name' => $data['name'],
+                'display_name' => $data['display_name'],
+                'description' => $data['description'],
+
             ]);
 
-            if (isset($dto->role_id)) {
-                $user->roles()->sync($dto->role_id);
-            }
-
-            return $user;
+            return $role;
         });
     }
 
-    public function listUsers(array $filters)
+    public function listRoles(array $filters)
     {
-        return $this->userRepo->paginate($filters);
+        return $this->paginate($filters);
     }
 
-    public function updateUser(User $user, UserDTO $dto)
+    public function updateRole(Role $role, array $data)
     {
-        // Fill the model with the new data from DTO
-        $user->fill($dto->toArray());
-        // Check if any database columns changed
-        if ($user->isDirty()) {
-            // This will only update the columns that are different
-            $this->userRepo->update($user, $user->getDirty());
-        }
-        // Handle Roles separately (Sync only if provided)
-        if (!empty($dto->role_id)) {
-            $user->roles()->sync($dto->role_id);
-        }
-
-        return $user->refresh();
+        $role->update($data);
+        return $role->refresh();
     }
 
-    /**
-     * Handle the excel import logic
-     */
-    public function importUsers($file)
+    private function paginate(array $filters = [], int $perPage = 5): LengthAwarePaginator
     {
-        // This will trigger the ToModel and WithValidation logic in your Import class
-        return Excel::import(new UserImportService(), $file);
-    }
+        return $this->role->query()
+            ->withCount(['policies','users'])
+            ->with(['policies:id,name', 'parents:id,name'])
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    // ILIKE is PostgreSQL's built-in case-insensitive search
+                    $q->where('name', 'ILIKE', "%{$search}%")
+                        ->orWhere('display_name', 'ILIKE', "%{$search}%"); // Recommended to include email
 
+                });
+            })
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+
+
+    }
 
 
 }

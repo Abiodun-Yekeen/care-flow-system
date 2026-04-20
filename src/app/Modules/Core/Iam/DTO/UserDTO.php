@@ -12,8 +12,7 @@ class UserDTO
         public readonly string $staff_id,
         public readonly string $mobile_no,
         public readonly ?int $department_id,
-        public readonly ?int $role_id,
-        public readonly string $email,
+        public readonly ?string $email,
         public readonly string $password,
 
 
@@ -26,7 +25,6 @@ class UserDTO
             staff_id: $data['staff_id'],
             mobile_no: $data['mobile_no'],
             department_id:  $data['department'],
-            role_id:  $data['role'],
             email: $data['email'],
             password: '',
 

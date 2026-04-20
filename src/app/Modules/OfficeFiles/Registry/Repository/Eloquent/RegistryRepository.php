@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Modules\OfficeFiles\Registry\Services\Eloquent;
+namespace App\Modules\OfficeFiles\Registry\Repository\Eloquent;
 
 use App\Modules\OfficeFiles\Registry\Models\FileReceive;
-use App\Modules\OfficeFiles\Registry\Services\Contracts\RegistryInterface;
+use App\Modules\OfficeFiles\Registry\Repository\Contracts\RegistryInterface;
 use Dotenv\Repository\RepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;

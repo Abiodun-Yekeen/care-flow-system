@@ -32,7 +32,6 @@ class UserRequest extends FormRequest
                 'email',
             ],
             'department' => ['required'],
-            'role' => ['required'],
         ];
 
     }

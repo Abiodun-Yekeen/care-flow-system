@@ -1,5 +1,7 @@
 import { defineStore } from "pinia"
-
+import notificationSound from '@/assests/notification.mp3';
+import { onMessage } from "firebase/messaging";
+import { messaging } from "@/firebase";
 export const useNotificationStore = defineStore("notification", {
     state: () => ({
         // The active banner notification
@@ -9,12 +11,15 @@ export const useNotificationStore = defineStore("notification", {
             type: 'success', // success, error, info, warning
         },
         timeout: null,
-        criticalAlerts: [] // Keeping your persistent alerts logic
+        criticalAlerts: [], // Keeping your persistent alerts logic
+        unreadCount: 0,
+        notifications:[],
+        initialized: false,
     }),
 
     actions: {
         // Core show logic
-        show(message, type = 'success', duration = 3600) {
+        show(message, type = 'success', duration = 10000) {
             if (this.timeout) clearTimeout(this.timeout);
 
             this.current.message = message;
@@ -67,25 +72,173 @@ export const useNotificationStore = defineStore("notification", {
         removeCriticalAlert(id) {
             this.criticalAlerts = this.criticalAlerts.filter(a => a.id !== id);
         },
+
+        // Initial setup to get the count from Laravel
+        setInitialCount(count) {
+            this.unreadCount = count;
+        },
+
+        async fetchNotifications() {
+            try {
+                const response = await axios.get('/api/v1/notifications');
+                this.notifications = response.data;
+                this.unreadCount = this.notifications.filter(n => !n.read_at).length;
+                this.initialized = true;
+            } catch (error) {
+                console.error("Could not load notifications from DB", error);
+            }
+        },
+
+        //Listen for Push Notification
+        listenForPushNotifications() {
+            onMessage(messaging, (notification) => {
+
+                const data = notification?.data || notification?.notification || {};
+
+                const newItem = {
+                    id: data.id || Math.random(),
+                    data,
+                    read_at: null,
+                    created_at: new Date().toISOString()
+                };
+
+                this.notifications.unshift(newItem);
+                this.unreadCount++;
+
+                // Sound (same as Echo)
+                const audio = new Audio(notificationSound);
+                audio.play().catch(() => {});
+
+                let actionPrefix = '📄';
+
+                switch (data.action_type) {
+                    case 'file_routed': actionPrefix = '📂 [Transfer]'; break;
+                    case 'file_returned': actionPrefix = '↩️ [Returned]'; break;
+                    case 'new_submission': actionPrefix = '📄 [New File]'; break;
+                }
+
+                const fullMessage = `${actionPrefix} ${data.message}`;
+
+                // UI behavior (same logic as Echo)
+                if (data.priority === 'immediate') {
+                    this.addCriticalAlert('error', `IMMEDIATE: ${fullMessage}`);
+                    this.error(fullMessage, true);
+                }
+                else if (data.priority === 'urgent') {
+                    this.warning(fullMessage);
+                }
+                else {
+                    data.action_type === 'file_returned'
+                        ? this.warning(fullMessage)
+                        : this.success(fullMessage);
+                }
+
+                // Optional: system notification (ONLY for background-like UX)
+                if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
+                    new Notification('New Notification', {
+                        body: fullMessage,
+                        icon: '/icon.png'
+                    });
+                }
+            });
+        },
+
         // Real-time listener
-        // listen() {
-        //     echo.channel("clinical-alerts")
-        //         .listen("CriticalLabResult", (e) => {
-        //             // Critical - use both systems
-        //             this.error(
-        //                 `Critical Lab Result: ${e.patient.name} - ${e.test}`,
-        //                 true // critical flag
-        //             )
-        //         })
-        //         .listen("AppointmentReminder", (e) => {
-        //             // Non-critical - just toast
-        //             this.info(`Appointment: ${e.patient.name} at ${e.time}`)
-        //         })
-        //         .listen("LowInventory", (e) => {
-        //             // Warning - use toast
-        //             this.warning(`Low inventory: ${e.item} (${e.quantity} left)`)
-        //         })
-        // }
+        listenForNotifications(userId) {
+            if (!userId) return;
+
+            window.Echo.private(`App.Modules.Core.Iam.Models.User.${userId}`)
+                .notification((notification) => {
+
+                    this.handleIncomingNotification(notification);
+                });
+        },
+            // You can still keep your public channel listeners here too
+            // window.Echo.channel("clinical-alerts")
+            //     .listen("CriticalLabResult", (e) => {
+            //         this.error(`Critical Lab Result: ${e.patient.name}`, true);
+            //     });
+            //},
+
+        // Stop listening when user logs out (prevents memory leaks)
+        stopListening(userId) {
+            if (window.Echo) {
+                window.Echo.leave(`App.Models.User.${userId}`);
+            }
+        },
+
+        addNotification(notification) {
+            // Add to the top of the list
+            this.notifications.unshift(notification);
+            this.unreadCount++;
+
+            // Trigger a browser toast if you have a toast library
+            // this.show(notification.data.message);
+        },
+        async markAsRead(id) {
+            // Update locally
+            const n = this.notifications.find(n => n.id === id);
+            if (n && !n.read_at) {
+                n.read_at = new Date();
+                this.unreadCount--;
+                // Optional: Call your Laravel API to mark as read in DB
+                try {
+                 await axios.patch(`/api/v1/notifications/${id}/read`);
+                } catch (error) {
+                    console.error("Failed to sync read status to server:", error);
+                }
+            }
+        },
+        async markAllAsRead() {
+            // Update all locally
+            this.notifications.forEach(n => {
+                if (!n.read_at) n.read_at = new Date().toISOString();
+            });
+            this.unreadCount = 0;
+
+            try {
+                await axios.post('/api/v1/notifications/mark-all-read');
+            } catch (error) {
+                console.error("Failed to mark all as read:", error);
+            }
+        },
+        handleIncomingNotification(notification) {
+            const newItem = {
+                id: notification.id || Math.random(),
+                data: notification,
+                read_at: null,
+                created_at: new Date().toISOString()
+            };
+
+            this.notifications.unshift(newItem);
+            this.unreadCount++;
+
+            const audio = new Audio(notificationSound);
+            audio.play().catch(() => {});
+
+            let actionPrefix = '📄';
+
+            switch (notification.action_type) {
+                case 'file_routed': actionPrefix = '📂 [Transfer]'; break;
+                case 'file_returned': actionPrefix = '↩️ [Returned]'; break;
+                case 'new_submission': actionPrefix = '📄 [New File]'; break;
+            }
+
+            const fullMessage = `${actionPrefix} ${notification.message}`;
+
+            if (notification.priority === 'immediate') {
+                this.addCriticalAlert('error', `IMMEDIATE: ${fullMessage}`);
+                this.error(fullMessage, true);
+            }
+            else if (notification.priority === 'urgent') {
+                this.warning(fullMessage);
+            }
+            else {
+                notification.action_type === 'file_returned'
+                    ? this.warning(fullMessage)
+                    : this.success(fullMessage);
+            }
+        }
     }
 });
 

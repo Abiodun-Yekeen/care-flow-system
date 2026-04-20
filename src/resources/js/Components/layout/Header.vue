@@ -11,11 +11,9 @@ const page = usePage()
 
 // Computed property to reactively track the logged-in user
 const user = computed(() => page.props.auth.user)
-const role = computed(() => page.props.auth.role)
 
 // Defining emits so the parent layout can handle the sidebar state
 const emit = defineEmits(['toggle-sidebar'])
-
 
 </script>
 
@@ -35,12 +33,10 @@ const emit = defineEmits(['toggle-sidebar'])
 
                     <span class="font-bold text-sm sm:text-lg tracking-tight">FMC-EKITI</span>
                 </div>
-
                 <GlobalSearch/>
 
-                <Notification :name="user.name" :role="role"/>
-
-            </div>
+                <Notification :name="user.name" :role="user.role_name"/>
+             </div>
         </div>
     </header>
 </template>

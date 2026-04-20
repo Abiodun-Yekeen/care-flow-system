@@ -5,9 +5,13 @@ use App\Http\Controllers\Controller;
 use App\Modules\Core\Iam\DTO\UserDTO;
 use App\Modules\Core\Iam\Http\Requests\UserRequest;
 use App\Modules\Core\Iam\Http\Requests\UserRequestUpload;
+use App\Modules\Core\Iam\Models\Role;
 use App\Modules\Core\Iam\Models\User;
+use App\Modules\Core\Iam\Services\EffectiveAccessService;
+use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Iam\Services\UserImportService;
 use App\Modules\Core\Iam\Services\UserService;
+use App\Modules\Organization\Department\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -16,12 +20,12 @@ use Maatwebsite\Excel\Facades\Excel;
 class UserController extends Controller
 {
 
-    protected $userService;
 
-    public function __construct(UserService $userService)
-    {
-        $this->userService = $userService;
-    }
+    public function __construct(protected UserService $userService,
+                                protected EffectiveAccessService $accessService,
+                                protected IamAuthorizationService $iamService,
+    )
+    {}
 
     public function index(Request $request)
     {
@@ -32,7 +36,8 @@ class UserController extends Controller
     }
     public function create()
     {
-        return Inertia::render('modules/admin/pages/users/Create',[]);
+        return Inertia::render('modules/admin/pages/users/Create',[
+        ]);
     }
     public function store(UserRequest $request)
     {
@@ -64,18 +69,47 @@ class UserController extends Controller
         $dto = UserDTO::fromArray($request->validated());
         $this->userService->updateUser($user, $dto);
 
-        // Sync roles (mapping 'role' from form to the roles table)
-        if ($dto->role_id) {
-            $user->roles()->sync($dto->role_id);
-        }
-
        return redirect()->route('users.index');
     }
     public function show(User $user)
     {
         return Inertia::render('modules/admin/pages/users/Show',[
-            'user' => $user->load(['roles:id,name', 'department:id,name']),
+            'user' => $user->load([
+                'roles:id,name,display_name',
+                'roles.policies:id,name',
+                'roles.parents:id,name',
+                'department:id,name'
+            ]),
+            'effectiveAccess' => $this->iamService->getPermissionMatrix($user),
+            'roles' => Role::all(['id', 'display_name', 'name']),
 
+        ]);
+
+    }
+
+    public function assignRoles(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'role_ids' => ['required', 'array'],
+            'role_ids.*' => ['integer', 'exists:roles,id'],
+        ]);
+
+        $user->roles()->syncWithoutDetaching($data['role_ids']);
+
+        return back()->with('success', 'Roles assigned successfully.');
+    }
+
+    public function removeRole(User $user, Role $role)
+    {
+        $user->roles()->detach($role->id);
+
+        return back()->with('success', 'Role removed successfully.');
+    }
+
+    public function effectiveAccess(User $user)
+    {
+        return response()->json([
+            'data' => $this->accessService->resolveUserMatrix($user),
         ]);
     }
 

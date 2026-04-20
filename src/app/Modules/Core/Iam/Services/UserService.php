@@ -29,8 +29,11 @@ class UserService
                 'password' => $password,
             ]);
 
-            if (isset($dto->role_id)) {
-                $user->roles()->sync($dto->role_id);
+          // Attach to pivot table (department_user)
+            if (isset($dto->department_id)) {
+                $user->departments()->sync([
+                    $dto->department_id => ['is_primary' => true]
+                ]);
             }
 
             return $user;
@@ -51,9 +54,10 @@ class UserService
             // This will only update the columns that are different
             $this->userRepo->update($user, $user->getDirty());
         }
-        // Handle Roles separately (Sync only if provided)
-        if (!empty($dto->role_id)) {
-            $user->roles()->sync($dto->role_id);
+        if (isset($dto->department_id)) {
+            $user->department()->sync([
+                $dto->department_id => ['is_primary' => true]
+            ]);
         }
 
         return $user->refresh();

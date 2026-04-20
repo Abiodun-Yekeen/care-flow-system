@@ -3,6 +3,7 @@
 namespace App\Modules\Core\Iam\Services;
 
 use App\Modules\Core\Iam\DTO\UserDTO;
+use App\Modules\Core\Iam\Models\Policy;
 use App\Modules\Core\Iam\Models\Role;
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Repository\Contracts\UserRepositoryInterface;
@@ -14,21 +15,21 @@ use Maatwebsite\Excel\Facades\Excel;
 class PolicyService
 {
     public function __construct(
-        Private Role  $role,
+        Private Policy  $policy,
     )
     {}
 
     public function createRole(array $data)
     {
         return DB::transaction(function () use ($data) {
-            $role = $this->role->create([
+            $role = $this->$policy->create([
                 'name' => $data['name'],
                 'display_name' => $data['display_name'],
                 'description' => $data['description'],
 
             ]);
 
-            return $role;
+            return $policy;
         });
     }
 
@@ -37,26 +38,19 @@ class PolicyService
         return $this->paginate($filters);
     }
 
-    public function updateRole(Role $role, array $data)
+    public function updateRole(Policy $policy, array $data)
     {
-        // Fill the model with the new data
-        $role->fill($data);
-        // Check if any database columns changed
-        if ($role->isDirty()) {
-            // This will only update the columns that are different
-            $this->role->update($role, $role->getDirty());
-        }
-        return $role->refresh();
+        $policy->update($data);
+        return $policy->refresh();
     }
 
     private function paginate(array $filters = [], int $perPage = 5): LengthAwarePaginator
     {
-        return $this->role->query()
+        return $this->policy->query()
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     // ILIKE is PostgreSQL's built-in case-insensitive search
-                    $q->where('name', 'ILIKE', "%{$search}%")
-                        ->orWhere('display_name', 'ILIKE', "%{$search}%"); // Recommended to include email
+                    $q->where('name', 'ILIKE', "%{$search}%");
 
                 });
             })

@@ -1,4 +1,5 @@
 <script setup>
+
 import {ref, computed, watch} from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import ContextModuleLayout from "@/Components/layout/ContextModuleLayout.vue"
@@ -6,7 +7,7 @@ import PageHeader from "@/Components/layout/PageHeader.vue"
 import ActionBar from "@/Components/forms/ActionBar.vue"
 import DataTable from "@/Components/tables/DataTable.vue"
 import { Building2, Mail, ShieldCheck, Phone, Fingerprint } from "lucide-vue-next"
-import { UserActions } from "@/Pages/modules/admin/Composables/useActions.js"
+import {RoleActions, UserActions} from "@/Pages/modules/admin/Composables/useActions.js"
 import FormSearchFilter from "@/Components/forms/FormSearchFilter.vue";
 import DataTableRow from "@/Components/tables/DataTableRow.vue";
 import UserAvatarCell from "@/Components/tables/UserAvatarCell.vue";
@@ -14,7 +15,7 @@ import Badge from "@/Components/tables/Badge.vue";
 import debounce from 'lodash/debounce' // Recommended to prevent too many server requests
 
 const props = defineProps({
-    users: Object,
+    roles: Object,
     filters: Object
 })
 
@@ -22,31 +23,31 @@ const props = defineProps({
 const selectedIds = ref([])
 
 // Get the actual user object for the first selected item
-const selectedUser = computed(() => {
+const selectedRole = computed(() => {
     if (selectedIds.value.length !== 1) return null;
-    return props.users.data.find(u => u.id === selectedIds.value[0]);
+    return props.roles.data.find(u => u.id === selectedIds.value[0]);
 
 })
 
 // Check/Uncheck all
 const toggleAll = (e) => {
-    selectedIds.value = e.target.checked ? props.users.data.map(u => u.id) : [];
+    selectedIds.value = e.target.checked ? props.roles.data.map(u => u.id) : [];
 }
 
 const search = ref(props.filters?.search || '')
 
 // Added a empty first column for the checkbox
 const tableColumns = [
-    { label: 'Fullname' },
-    { label: 'Mobile No' },
-    { label: 'Staff Id' },
-    { label: 'Department' },
-    { label: 'Roles' },
-    { label: 'Status' },
+    { label: 'Role Name' },
+    { label: 'Display Name' },
+    { label: 'Policies' },
+    { label: 'Parents' },
+    { label: 'Users' },
+    { label: 'Created At' },
 ]
 
 const handleSearch = () => {
-    router.get(route('users.index'), {
+    router.get(route('roles.index'), {
         search: search.value
     }, {
         preserveState: true, // Crucial: keeps your checkboxes selected
@@ -65,63 +66,57 @@ const handleSearch = () => {
 
 <template>
     <ContextModuleLayout>
-        <Head title="User Management" />
-        <PageHeader title="Users" subtitle="Manage system access and roles." />
+        <Head title="Roles Management" />
+        <PageHeader title="Roles" subtitle="Manage system access and roles." />
 
-        <ActionBar :actions="UserActions(selectedUser)" />
+        <ActionBar :actions="RoleActions(selectedRole)" />
 
         <div class="space-y-6 mt-6">
             <FormSearchFilter
                 v-model="search"
                 @keyup.enter="handleSearch"
-                placeholder="Search name, mobile no or staf id..."
+                placeholder="Search name ..."
             />
 
             <DataTable
                 v-model="selectedIds"
-                :items="users.data"
+                :items="roles.data"
                 :columns="tableColumns"
-                :pagination="users"
+                :pagination="roles"
             >
                 <template #body>
                     <DataTableRow
-                        v-for="user in users.data"
-                        :key="user.id"
-                        :item-id="user.id"
+                        v-for="role in roles.data"
+                        :key="role.id"
+                        :item-id="role.id"
                         v-model="selectedIds"
                     >
                         <td class="px-6 py-4">
-                            <UserAvatarCell :name="user.name" :email="user.email" />
+                            <UserAvatarCell :name="role.name"  />
                         </td>
 
                         <td class="px-6 py-4 text-xs text-slate-600">
-                            <span class="flex items-center gap-1"> {{ user.mobile_no }}</span>
+                            <span class="flex items-center gap-1"> {{ role.display_name }}</span>
                         </td>
-
-                        <td class="px-6 py-4">
-                        <span class=" items-center gap-1">
-                            {{ user.staff_id }}
-                        </span>
-                        </td>
-
                         <td class="px-6 py-4 text-sm text-slate-700">
-                            {{ user.department?.name || 'Unassigned' }}
+                            {{ role.policies_count }}
+                        </td>
+                                <td>
+                                <span v-for="parent in role.parents" :key="parent.id" class="rounded bg-gray-100 px-2 py-1 text-sm">
+                                 {{ parent.name }}
+                                </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-700">
+                          {{ role.users_count }}
+                    </td>
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            {{ role.created_at }}
                         </td>
 
-                        <td class="px-6 py-4">
-                            <div class="flex flex-wrap gap-1">
-                                <Badge v-for="role in user.roles.slice(0, 2)" :key="role.id " variant="white">
-                                    {{ role.name }}
-                                </Badge>
-                            </div>
-                        </td>
-
-                        <td class="px-6 py-4">
-                            <Badge variant="green">Active</Badge>
-                        </td>
                     </DataTableRow>
                 </template>
             </DataTable>
         </div>
     </ContextModuleLayout>
 </template>
+

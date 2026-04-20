@@ -17,7 +17,7 @@ class UserRepository implements UserRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 5): LengthAwarePaginator
     {
         return $this->model->query()
-            ->with(['department', 'roles'])
+            ->with(['department:id,name', 'roles:id,name'])
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     // ILIKE is PostgreSQL's built-in case-insensitive search

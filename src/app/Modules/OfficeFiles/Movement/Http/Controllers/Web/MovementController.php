@@ -1,6 +1,7 @@
 <?php
 
-namespace App\Modules\OfficeFiles\File\Http\Controllers\Web;
+namespace App\Modules\OfficeFiles\Movement\Http\Controllers\Web;
+
 use App\Http\Controllers\Controller;
 use App\Modules\OfficeFiles\File\Models\File;
 use App\Modules\OfficeFiles\Registry\DTO\RegistryDTO;

@@ -1,18 +1,34 @@
 <script setup>
 import ContextModuleLayout from "@/Components/layout/ContextModuleLayout.vue"
-import {Head, router, useForm} from "@inertiajs/vue3";
+import {Head, router, useForm, usePage} from "@inertiajs/vue3";
 import CreateTemporaryFile from "@/Pages/modules/registry/components/CreateTemporaryFile.vue";
 import {formData} from "@/Pages/modules/registry/services/formData.js";
 import PageHeader from "@/Components/layout/PageHeader.vue";
 import ValidationErrors from "@/Components/forms/ValidationErrors.vue";
 import LoadButton from "@/Components/ui/LoadButton.vue";
+import {useNotificationStore} from "@/core/stores/useNotificationStore.js";
+import {computed} from "vue";
 
+const notify = useNotificationStore()
+
+const minDate = computed(() => {
+    const currentYear = new Date().getFullYear();
+    return `${currentYear}-01-01`;
+});
 
 const form = useForm(formData)
 const submit = (isDraft = false) => {
+    form.clearErrors();
     form.is_draft = isDraft; // Pass this to your Laravel controller
-    form.post(route('registry.store'));
+    form.post(route('register.store') , {
+        preserveScroll: true,
+        onSuccess: () => {
+            form.reset()
+        },
+    });
 };
+
+
 </script>
 <template>
     <ContextModuleLayout>
@@ -31,20 +47,26 @@ const submit = (isDraft = false) => {
 
                             <div class=" ">
                                 <ValidationErrors :errors="form.errors" class="mb-6" />
-                                <CreateTemporaryFile :form="form"/>
+                                <CreateTemporaryFile :form="form" :min="minDate"/>
                             </div>
                         </div>
 
-                        <div class="p-4 flex flex-row flex-nowrap  gap-2">
+                        <div class="p-4 flex flex-row flex-nowrap gap-2">
                             <LoadButton
+                                type="button"
                                 variant="secondary"
-                                :loading="form.processing"
+                                :loading="form.processing && form.is_draft"
+                                :disabled="form.processing"
                                 @click="submit(true)">
-                                {{ form.processing ? 'Saving...' : 'Save Draft' }}
+                                {{ form.processing && form.is_draft ? 'Saving Draft...' : 'Save Draft' }}
                             </LoadButton>
 
-                            <LoadButton :loading="form.processing" @click="submit(false)">
-                                {{ form.processing ? 'Submitting...' : 'Submit' }}
+                            <LoadButton
+                                type="button"
+                                :loading="form.processing && !form.is_draft"
+                                :disabled="form.processing"
+                                @click="submit(false)">
+                                {{ form.processing && !form.is_draft ? 'Submitting...' : 'Submit' }}
                             </LoadButton>
                         </div>
 

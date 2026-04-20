@@ -29,6 +29,26 @@ class Department extends Model
     {
         return $this->hasMany(File::class, 'current_department_id');
     }
+    public function getCurrentHodIdAttribute()
+    {
+        //  Find the user in this department who has the 'hod' role
+        return $this->users()
+            ->whereHas('roles', function($q) {
+                $q->where('name', 'hod');
+            })
+            ->first()?->id;
+    }
+
+    public function scopeWithHod($query)
+    {
+        return $query->addSelect(['hod_id' => User::select('id')
+            ->whereColumn('department_id', 'departments.id')
+            ->whereHas('roles', fn($q) => $q->where('name', 'hod'))
+            ->limit(1)
+        ]);
+    }
+
+
 
 }
 

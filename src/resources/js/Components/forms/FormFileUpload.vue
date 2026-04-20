@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onBeforeUnmount } from 'vue';
+import {ref, onBeforeUnmount, watch} from 'vue';
 
 const props = defineProps({
     modelValue: { type: Array, default: () => [] }, // Must be an array
@@ -83,6 +83,18 @@ const handleDrop = (e) => {
     isDragging.value = false;
     handleFiles(e.dataTransfer.files);
 };
+
+watch(() => props.modelValue, (newVal) => {
+    // If the parent form was reset (array is empty), but we still have previews
+    if (newVal.length === 0 && filePreviews.value.length > 0) {
+        // Cleanup old URLs to prevent memory leaks
+        filePreviews.value.forEach(file => {
+            if (file.url) URL.revokeObjectURL(file.url);
+        });
+        // Clear the visual list
+        filePreviews.value = [];
+    }
+}, { deep: true });
 </script>
 
 <template>

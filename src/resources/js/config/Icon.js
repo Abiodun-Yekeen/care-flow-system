@@ -31,7 +31,7 @@ import {
     Puzzle,
     History,
     PillIcon,
-    SettingsIcon, BarChart3, Briefcase, FolderPlus, Inbox, FileLock
+    SettingsIcon, BarChart3, Briefcase, FolderPlus, Inbox, FileLock, PlusCircle
 
 } from "lucide-vue-next"
 
@@ -75,6 +75,7 @@ export const iconRegistry = {
     "bar-chart-3":BarChart3,
     "inbox":Inbox,
     "file-clock":FileLock,
+    "plus-circle":PlusCircle,
 
 
 

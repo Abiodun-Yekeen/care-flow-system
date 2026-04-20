@@ -1,127 +1,122 @@
 <script setup>
-import {ref, computed, watch} from 'vue'
-import { Head, router } from '@inertiajs/vue3'
-import ContextModuleLayout from "@/Components/layout/ContextModuleLayout.vue"
-import PageHeader from "@/Components/layout/PageHeader.vue"
-import ActionBar from "@/Components/forms/ActionBar.vue"
-import DataTable from "@/Components/tables/DataTable.vue"
-import { Building2, Mail, ShieldCheck, Phone, Fingerprint } from "lucide-vue-next"
-import { UserActions } from "@/Pages/modules/admin/Composables/useActions.js"
-import FormSearchFilter from "@/Components/forms/FormSearchFilter.vue";
-import DataTableRow from "@/Components/tables/DataTableRow.vue";
-import UserAvatarCell from "@/Components/tables/UserAvatarCell.vue";
-import Badge from "@/Components/tables/Badge.vue";
-import debounce from 'lodash/debounce' // Recommended to prevent too many server requests
+import { Head, useForm, Link } from '@inertiajs/vue3'
+import PageHeader from "@/Components/layout/PageHeader.vue";
+import ContextModuleLayout from "@/Components/layout/ContextModuleLayout.vue";
+import { ShieldCheckIcon, ListIcon, PlusCircleIcon } from 'lucide-vue-next';
+import PolicyBuilder from "@/Pages/modules/admin/components/PolicyBuilder.vue";
+import {useNotificationStore} from "@/core/stores/useNotificationStore.js";
 
-const props = defineProps({
-    users: Object,
-    filters: Object
+defineProps({
+    policies: Object,
+})
+const notify = useNotificationStore()
+
+const form = useForm({
+    name: '',
+    description: '',
+    statement: {
+        version: '2026-01-01',
+        statements: [
+            { sid: 'DefaultStmt', effect: 'allow', actions: ['view'], resources: ['*'] },
+        ],
+    },
 })
 
-// --- SELECTION LOGIC ---
-const selectedIds = ref([])
-
-// Get the actual user object for the first selected item
-const selectedUser = computed(() => {
-    if (selectedIds.value.length !== 1) return null;
-    return props.users.data.find(u => u.id === selectedIds.value[0]);
-
-})
-
-// Check/Uncheck all
-const toggleAll = (e) => {
-    selectedIds.value = e.target.checked ? props.users.data.map(u => u.id) : [];
-}
-
-const search = ref(props.filters?.search || '')
-
-// Added a empty first column for the checkbox
-const tableColumns = [
-    { label: 'Fullname' },
-    { label: 'Mobile No' },
-    { label: 'Staff Id' },
-    { label: 'Department' },
-    { label: 'Roles' },
-    { label: 'Status' },
-]
-
-const handleSearch = () => {
-    router.get(route('users.index'), {
-        search: search.value
-    }, {
-        preserveState: true, // Crucial: keeps your checkboxes selected
-        replace: true,       // Keeps browser history clean
-        preserveScroll: true // Prevents the page from jumping to top
+function submit() {
+    form.post(route('policies.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            form.reset();
+            notify.success('Policy created successfully!');
+        },
     })
 }
-
-    // watch the search variable
-    watch(search, debounce((value) => {
-        handleSearch()
-    }, 500))
-
-
 </script>
 
 <template>
     <ContextModuleLayout>
-        <Head title="User Management" />
-        <PageHeader title="Users" subtitle="Manage system access and roles." />
+        <Head title="Policy Management" />
 
-        <ActionBar :actions="UserActions(selectedUser)" />
+        <div class="h-full flex flex-col bg-white overflow-hidden">
+            <PageHeader title="IAM Policies" subtitle="Define fine-grained JSON permissions for roles." />
 
-        <div class="space-y-6 mt-6">
-            <FormSearchFilter
-                v-model="search"
-                @keyup.enter="handleSearch"
-                placeholder="Search name, mobile no or staf id..."
-            />
+            <div class="flex-1 overflow-hidden p-6">
+                <div class="grid grid-cols-12 gap-6 h-full">
 
-            <DataTable
-                v-model="selectedIds"
-                :items="users.data"
-                :columns="tableColumns"
-                :pagination="users"
-            >
-                <template #body>
-                    <DataTableRow
-                        v-for="user in users.data"
-                        :key="user.id"
-                        :item-id="user.id"
-                        v-model="selectedIds"
-                    >
-                        <td class="px-6 py-4">
-                            <UserAvatarCell :name="user.name" :email="user.email" />
-                        </td>
-
-                        <td class="px-6 py-4 text-xs text-slate-600">
-                            <span class="flex items-center gap-1"> {{ user.mobile_no }}</span>
-                        </td>
-
-                        <td class="px-6 py-4">
-                        <span class=" items-center gap-1">
-                            {{ user.staff_id }}
-                        </span>
-                        </td>
-
-                        <td class="px-6 py-4 text-sm text-slate-700">
-                            {{ user.department?.name || 'Unassigned' }}
-                        </td>
-
-                        <td class="px-6 py-4">
-                            <div class="flex flex-wrap gap-1">
-                                <Badge v-for="role in user.roles.slice(0, 2)" :key="role.id " variant="white">
-                                    {{ role.name }}
-                                </Badge>
+                    <div class="col-span-12 lg:col-span-5 flex flex-col space-y-4">
+                        <div class="bg-white rounded-xl border shadow-sm flex-1 flex flex-col overflow-hidden">
+                            <div class="p-4 border-b bg-slate-50/50 flex items-center gap-2 font-bold text-slate-700">
+                                <ListIcon :size="18" /> Active Policies
                             </div>
-                        </td>
+                            <div class="flex-1 overflow-y-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="sticky top-0 bg-white border-b z-10">
+                                    <tr>
+                                        <th class="p-4 text-[10px] font-bold text-slate-400 uppercase">Policy Name</th>
+                                        <th class="p-4 text-[10px] font-bold text-slate-400 uppercase text-center">Roles</th>
+                                        <th class="p-4"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                    <tr v-for="policy in policies.data" :key="policy.id" class="hover:bg-slate-50 transition">
+                                        <td class="p-4">
+                                            <div class="font-bold text-slate-700 text-sm">{{ policy.name }}</div>
+                                            <div class="text-[10px] text-slate-400 truncate max-w-[200px]">{{ policy.description }}</div>
+                                        </td>
+                                        <td class="p-4 text-center">
+                                                <span class="px-2 py-0.5 bg-slate-100 rounded text-xs font-bold text-slate-600">
+                                                    {{ policy.roles_count }}
+                                                </span>
+                                        </td>
+                                        <td class="p-4 text-right">
+                                            <Link :href="route('policies.show', policy.id)" class="text-[#06A3DA] font-bold text-xs uppercase hover:underline">
+                                                Manage
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
-                        <td class="px-6 py-4">
-                            <Badge variant="green">Active</Badge>
-                        </td>
-                    </DataTableRow>
-                </template>
-            </DataTable>
+                    <div class="col-span-12 lg:col-span-7 flex flex-col">
+                        <div class="bg-white rounded-xl border shadow-sm flex-1 flex flex-col overflow-hidden">
+                            <div class="p-4 border-b bg-blue-50/50 flex items-center justify-between">
+                                <div class="flex items-center gap-2 font-bold text-blue-700">
+                                    <PlusCircleIcon :size="18" /> Policy Visual Builder
+                                </div>
+                                <span class="text-[10px] font-mono text-blue-400">Ver: {{ form.statement.version }}</span>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="col-span-1">
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Policy Name</label>
+                                        <input v-model="form.name" class="w-full rounded-lg border-slate-200 text-sm" placeholder="e.g. PharmacyFullAccess" />
+                                    </div>
+                                    <div class="col-span-1">
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
+                                        <input v-model="form.description" class="w-full rounded-lg border-slate-200 text-sm" placeholder="What does this allow?" />
+                                    </div>
+                                </div>
+
+                                <div class="border-t pt-6">
+                                    <PolicyBuilder v-model="form.statement" />
+                                </div>
+                            </div>
+
+                            <div class="p-4 border-t bg-slate-50 flex justify-end">
+                                <button @click="submit" :disabled="form.processing"
+                                        class="px-8 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
+                                    <ShieldCheckIcon :size="18" />
+                                    {{ form.processing ? 'Saving...' : 'Deploy Policy' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </ContextModuleLayout>
 </template>

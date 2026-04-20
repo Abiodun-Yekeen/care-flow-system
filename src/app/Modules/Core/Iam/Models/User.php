@@ -5,6 +5,7 @@ namespace App\Modules\Core\Iam\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Iam\Traits\HasIamRoles;
+use App\Modules\Core\Shared\Models\FcmToken;
 use App\Modules\OfficeFiles\File\Models\File;
 use App\Modules\OfficeFiles\Movement\Models\FileMovement;
 use App\Modules\Organization\Department\Models\Department;
@@ -32,10 +33,10 @@ class User extends Authenticatable
         'mobile_no',
         'email',
         'department_id',
-        'role',
         'password',
 
     ];
+    protected $appends = ['primary_department','role_name'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -57,11 +58,15 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'created_at' => 'datetime:Y-m-d H:i'
         ];
     }
 
 
-
+    public function fcmTokens()
+    {
+        return $this->hasMany(FcmToken::class);
+    }
     public function assignRole($role)
     {
         return $this->roles()->syncWithoutDetaching($role);
@@ -75,7 +80,7 @@ class User extends Authenticatable
 
     public function getRoleNameAttribute()
     {
-        return $this->roles->first()?->name ?? 'Staff';
+        return $this->roles->first()?->display_name ?? 'Staff';
     }
     public function files()
     {
@@ -84,8 +89,30 @@ class User extends Authenticatable
 
     public function department()
     {
-        return $this->belongsTo(Department::class, 'department_id');
+
+        return $this->belongsToMany(Department::class, 'department_user')
+            ->withPivot('is_primary')
+            ->withTimestamps();
     }
+    public function primaryDepartment()
+    {
+        return $this->belongsToMany(Department::class, 'department_user')
+            ->wherePivot('is_primary', true)
+            ->withPivot('is_primary')
+            ->limit(1);
+    }
+    public function getPrimaryDepartmentAttribute()
+    {
+        if ($this->relationLoaded('primaryDepartment')) {
+            return $this->primaryDepartment;
+        }
+
+        // Otherwise, fall back to the query
+        return $this->primaryDepartment()->first();
+    }
+
+
+
     public function createdFiles()
     {
         return $this->hasMany(File::class, 'created_by');

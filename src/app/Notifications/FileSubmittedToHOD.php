@@ -2,8 +2,10 @@
 
 namespace App\Notifications;
 
+use App\Modules\OfficeFiles\File\Models\File;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -14,41 +16,28 @@ class FileSubmittedToHOD extends Notification
     /**
      * Create a new notification instance.
      */
-    public function __construct()
+    public function __construct(public File $file, public String $data) {}
+
+    public function via($notifiable): array
     {
-        //
+        // database stores it for the "Bell" icon, broadcast makes it real-time
+        return ['database', 'broadcast'];
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
-    {
-        return ['mail'];
-    }
-
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
-    }
-
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable): array
     {
         return [
-            //
+            'action_type' =>  $this->data,
+            'file_id' => $this->file->id,
+            'subject' => $this->file->subject,
+            'message' => "New file received: {$this->file->subject}",
+            'priority' => $this->file->priority,
+            'sender' => $notifiable->name,
         ];
+    }
+
+    public function toBroadcast($notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage($this->toArray($notifiable));
     }
 }

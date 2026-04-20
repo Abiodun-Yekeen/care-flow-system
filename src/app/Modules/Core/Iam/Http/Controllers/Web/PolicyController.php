@@ -4,7 +4,9 @@ namespace App\Modules\Core\Iam\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Core\Iam\Http\Requests\RoleRequest;
+use App\Modules\Core\Iam\Models\Policy;
 use App\Modules\Core\Iam\Models\Role;
+use App\Modules\Core\Iam\Services\EffectiveAccessService;
 use App\Modules\Core\Iam\Services\RoleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,55 +15,74 @@ use Inertia\Inertia;
 class PolicyController extends Controller
 {
 
-    public function __construct( Private RoleService $roleService){}
+    public function __construct(
+        protected EffectiveAccessService $accessService
+    ) {}
 
-    public function index(Request $request)
+    public function index()
     {
-        return Inertia::render('modules/admin/pages/roles/Index', [
-            'roles' => $this->roleService->listRoles($request->only('search')),
-            'filters' => $request->only('search'),
-        ]);
-    }
-    public function create()
-    {
-        return Inertia::render('modules/admin/pages/roles/Create',[]);
-    }
-    public function store(RoleRequest $request)
-    {
-        try {
-            $data = $request->validated();
-            $result = $this->roleService->createRole($data);
-            return redirect()->route('roles.index');
-        }catch (\Exception $exception){
-            Log::error('Registration Failed: ' . $e->getMessage());
-            // Send the user back with a "System Error" flash message
-            return redirect()->back()
-                ->with('error', 'Database Error: Could not save Role. Please contact support.')
-                ->withInput();
-        }
+        $policies = Policy::withCount('roles')
+            ->latest()
+            ->paginate(15);
 
-    }
-
-    public function edit(Role $role)
-    {
-        return Inertia::render('modules/admin/pages/roles/Edit',[
-            'role' => $role,
+        return Inertia::render('modules/admin/pages/policy/Index', [
+            'policies' => $policies,
         ]);
     }
 
-    public function update(RoleRequest $request, Role $role)
+    public function show(Policy $policy)
     {
+        $policy->load('roles:id,name');
 
-        $data =$request->validated();
-        $this->roleService->updateRole($role, $data);
-
-        return redirect()->route('role.index');
-    }
-    public function show(Role $role)
-    {
-        return Inertia::render('modules/admin/pages/roles/Show',[
-            'role' => $role,
-
+        return Inertia::render('modules/admin/pages/policy/Show', [
+            'policy' => $policy,
         ]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:policies,name'],
+            'description' => ['nullable', 'string'],
+            'document' => ['required', 'array'],
+            'document.version' => ['nullable', 'string'],
+            'document.statements' => ['required', 'array', 'min:1'],
+        ]);
+
+        Policy::create($data);
+
+        return redirect()->route('admin.iam.policies.index')
+            ->with('success', 'Policy created successfully.');
+    }
+
+    public function update(Request $request, Policy $policy)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255', "unique:policies,name,{$policy->id}"],
+            'description' => ['nullable', 'string'],
+            'document' => ['required', 'array'],
+            'document.version' => ['nullable', 'string'],
+            'document.statements' => ['required', 'array', 'min:1'],
+        ]);
+
+        $policy->update($data);
+
+        return back()->with('success', 'Policy updated successfully.');
+    }
+
+    public function simulate(Request $request, Policy $policy)
+    {
+        $data = $request->validate([
+            'action' => ['required', 'string'],
+            'resource' => ['required', 'string'],
+        ]);
+
+        $result = $this->accessService->simulateForPolicies(
+            collect([$policy]),
+            $data['action'],
+            $data['resource']
+        );
+
+        return response()->json($result);
     }
 }

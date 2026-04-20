@@ -3,6 +3,7 @@ import Checkbox from '@/Components/forms/Checkbox.vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import FormInput from "@/Components/forms/FormInput.vue";
+import { registerForPush } from "@/core/services/push"; // push Notification firebase
 
 defineProps({
     canResetPassword: {
@@ -14,14 +15,20 @@ defineProps({
 });
 
 const form = useForm({
-    email: '',
+    mobile_no: '',
     password: '',
     remember: false,
 });
 
-const submit = () => {
+const submit = async () => {
     form.post(route('login'), {
-        onFinish: () => form.reset('password'),
+        onSuccess: async () => {
+            // only run AFTER login finishes
+            await registerForPush();
+        },
+        onFinish: async () => {
+            form.reset('password');
+        }
     });
 };
 </script>
@@ -41,11 +48,11 @@ const submit = () => {
         <!-- Form -->
         <form class="mt-8 space-y-6" @submit.prevent="submit">
               <FormInput
-                  id="email"
-                  v-model="form.email"
-                  label="Email"
+                  id="mobile_no"
+                  v-model="form.mobile_no"
+                  label="Mobile Number"
                   required
-                  :error="form.errors.email"
+                  :error="form.errors.mobile_no"
               />
 
             <FormInput

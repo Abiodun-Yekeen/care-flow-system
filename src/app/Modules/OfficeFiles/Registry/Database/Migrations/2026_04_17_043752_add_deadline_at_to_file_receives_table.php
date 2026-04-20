@@ -12,17 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('file_receives', function (Blueprint $table) {
-            //
+            // We use dateTime to include the specific hour/minute for the 24hr window
+            $table->dateTime('deadline_at')->nullable()->after('date_received');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('file_receives', function (Blueprint $table) {
-            //
+            $table->dropColumn('deadline_at');
         });
     }
 };

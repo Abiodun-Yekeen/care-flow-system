@@ -20,17 +20,23 @@ class EloquentModuleRepository implements ModuleRepositoryInterface
     }
 
 
-    public function getChildrenByParentKey(string $parentKey): Collection
+    public function getChildrenByParentRouteSegment(string $segment): Collection
     {
+        $parentRoute = '/' . ltrim($segment, '/');
+
         $parent = Module::query()
-            ->where('key', $parentKey)
-            ->firstOrFail();
+            ->where('route', $parentRoute)
+            ->first();
+
+        if (!$parent) {
+            return collect();
+        }
 
         return Module::query()
             ->where('parent_id', $parent->id)
             ->where('is_active', true)
             ->orderBy('order')
-            ->get(['id','key','label','icon','route']);
+            ->get(['id', 'key', 'label', 'icon', 'route']);
     }
 
     public function findByKey(string $key): ?object

@@ -7,6 +7,7 @@ use Illuminate\Validation\Rule;
 
 class RoleRequest extends FormRequest
 {
+
     public function authorize(): bool
     {
         return true; // Add your authorization logic here
@@ -18,21 +19,18 @@ class RoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'staff_id' => [
+            'name' => ['required',
+                'string',
+                'max:255',
+                 Rule::unique('roles', 'name')->ignore($this->role)
+            ],
+            'description' => ['nullable',],
+            'display_name' => [
                 'required',
-                Rule::unique('users', 'staff_id')->ignore($this->user),
+                Rule::unique('roles', 'display_name')->ignore($this->role),
             ],
-            'mobile_no' => [
-                'required',
-                Rule::unique('users', 'mobile_no')->ignore($this->user),
-            ],
-            'email' => [
-                'nullable',
-                'email',
-            ],
-            'department' => ['required'],
-            'role' => ['required'],
+            'metadata' => ['nullable',],
+
         ];
 
     }
@@ -43,8 +41,8 @@ class RoleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'The  name is required.',
-            'staff_id.required' => 'The Staff id is required.',
+            'name.required' => 'The  Name is required.',
+            'display_name.required' => 'The Display Name  is required.',
             // Add other custom messages as needed
         ];
     }

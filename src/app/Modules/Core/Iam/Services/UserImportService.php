@@ -32,10 +32,13 @@ class UserImportService implements ToModel, WithHeadingRow, WithValidation
         ]);
 
         $user->save();
-
-        if ($role) {
-            $user->roles()->sync([$role->id]);
+        // Attach to pivot table (department_user)
+        if (isset($dept)) {
+            $user->departments()->sync([
+                $dept->id => ['is_primary' => true]
+            ]);
         }
+
 
         return $user;
     }

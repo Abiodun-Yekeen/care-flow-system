@@ -35,9 +35,16 @@ class HandleInertiaRequests extends Middleware
 
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user()?->only('id', 'name', 'username'),
-                'role'=>$request->user()?->role_name
+                'user' => $request->user(),
             ],
+
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
+            'unread_notifications_count' => $request->user()
+                ? $request->user()->unreadNotifications()->count()
+                : 0,
 
             // sidebar, filtered by IAM
             'navigation' => fn () =>

@@ -27,6 +27,7 @@ return new class extends Migration
             $table->timestamp('submitted_at')->nullable();
 
             $table->timestamps();
+
         });
     }
 

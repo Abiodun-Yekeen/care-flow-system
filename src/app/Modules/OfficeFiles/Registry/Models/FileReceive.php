@@ -9,16 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class FileReceive extends Model
 {
-    protected $fillable = [
-        'file_id',
-        'receive_department_id',
-        'created_by',
-        'received_from',
-        'remark',
-        'status',
-        'date_received',
-        'submitted_at',
-    ];
+    protected $guarded=[];
 
     public function file()
     {
@@ -33,5 +24,10 @@ class FileReceive extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'uuid';
     }
 }

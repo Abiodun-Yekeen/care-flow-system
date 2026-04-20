@@ -53,12 +53,16 @@ class ModuleService
     /**
      * Children for current parent
      */
-    public function getChildrenModules(User $user, string $parentKey): array
+    public function getChildrenModules(User $user, ?string $parentSegment): array
     {
+        if (!$parentSegment) {
+            return [];
+        }
+
         $viewable = $this->getViewableModuleKeys($user);
 
         return $this->modules
-            ->getChildrenByParentKey($parentKey)
+            ->getChildrenByParentRouteSegment($parentSegment)
             ->filter(fn ($module) => in_array($module->key, $viewable))
             ->values()
             ->toArray();

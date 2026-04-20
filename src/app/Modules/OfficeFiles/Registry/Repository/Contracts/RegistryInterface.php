@@ -1,5 +1,6 @@
 <?php
-namespace App\Modules\OfficeFiles\Registry\Services\Contracts;
+namespace App\Modules\OfficeFiles\Registry\Repository\Contracts;
+
 use App\Modules\OfficeFiles\Registry\Models\FileReceive;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;

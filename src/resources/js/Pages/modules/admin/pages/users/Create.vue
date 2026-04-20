@@ -16,7 +16,7 @@ const form = useForm(userForm)
 const metaStore = useMetaStore()
 const notify = useNotificationStore()
 
-const {department, role} = storeToRefs(metaStore)
+const {department} = storeToRefs(metaStore)
 
 const submit = () => {
     form.clearErrors();
@@ -49,7 +49,6 @@ const submit = () => {
                             <CreateNewUser
                                 :form="form"
                                 :department="department"
-                                :role="role"
                             />
                         </div>
                     </div>

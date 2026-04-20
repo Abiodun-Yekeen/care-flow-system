@@ -3,3 +3,7 @@ Sidebar / Navbar	secondary-blue (#091E3E)	Provides a solid, professional frame t
 Main Action Buttons	primary-blue (#06A3DA)	This is a "high-energy" blue. It makes "Submit," "Save," or "Register" pop off the screen.
 Sidebar Active State	primary-blue (#06A3DA)	Highlights exactly where the user is in the menu.
 Header Text / Icons	secondary-blue (#091E3E)	Great for readability on white backgrounds.
+
+Registry Action
+
+->action(['view', 'create', 'submit', 'search', 'upload', 'attach_document'])
