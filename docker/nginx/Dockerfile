@@ -1,3 +1,4 @@
+#Nginx
 FROM nginx:alpine AS production
 
 # Copy your Nginx configuration
