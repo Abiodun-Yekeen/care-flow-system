@@ -17,6 +17,7 @@ services:
       DB_DATABASE: care_flow_system
       DB_USERNAME: postgres
       DB_PASSWORD: admin
+
     depends_on:
       - care-flow-postgres
       - care-flow-redis
