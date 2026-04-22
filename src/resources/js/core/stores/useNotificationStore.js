@@ -118,7 +118,7 @@ export const useNotificationStore = defineStore("notification", {
                 }
 
                 const fullMessage = `${actionPrefix} ${data.message}`;
-
+console.log(fullMessage)
                 // UI behavior (same logic as Echo)
                 if (data.priority === 'immediate') {
                     this.addCriticalAlert('error', `IMMEDIATE: ${fullMessage}`);

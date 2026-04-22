@@ -25,7 +25,7 @@ RUN npm run build
 # Stage 3: Production Nginx
 FROM nginx:alpine AS production
 
-# Copy the Nginx config
+# Copy the Nginx configs
 COPY ./docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
 # Copy the ENTIRE public folder (including the newly created 'build' folder)
