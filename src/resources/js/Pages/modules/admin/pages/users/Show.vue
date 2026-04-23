@@ -67,11 +67,11 @@ const removeRole = (roleId) => {
                             Departmental Scope
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <span v-for="dept in user.departments" :key="dept.id"
+                            <span v-for="dept in user.department" :key="dept.id"
                                   class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100">
                                 {{ dept.name }}
                             </span>
-                            <span v-if="!user.departments?.length" class="text-slate-400 italic text-sm">No departments assigned.</span>
+                            <span v-if="!user.department?.length" class="text-slate-400 italic text-sm">No departments assigned.</span>
                         </div>
                         <p class="text-[10px] text-slate-400 mt-4 leading-tight">
                             * Permissions are automatically scoped to these departments via ARN resolution.

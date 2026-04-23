@@ -23,7 +23,7 @@ const submit = () => {
     form.post(route('users.store'), {
         preserveScroll: true,
         onSuccess: () => {
-            notify.success("User created and roles assigned successfully.");
+            notify.success("User created successfully.");
         },
 
     });

@@ -31,7 +31,7 @@ class UserService
 
           // Attach to pivot table (department_user)
             if (isset($dto->department_id)) {
-                $user->departments()->sync([
+                $user->department()->sync([
                     $dto->department_id => ['is_primary' => true]
                 ]);
             }
