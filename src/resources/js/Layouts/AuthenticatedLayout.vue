@@ -13,6 +13,7 @@ const page = usePage();
 const notify = useNotificationStore();
 const ui = useUiStore();
 
+console.log(page.props)
 const emit = defineEmits(['toggleSidebar'])
 
 onMounted(() => {
@@ -22,8 +23,7 @@ onMounted(() => {
     setTimeout(() => ui.stopLoading(), 100)
 })
 
-// Keep the Flash watcher here because Flash messages are UI-specific
-// and usually trigger toast notifications in the layout.
+
 watch(() => page.props.flash, (flash) => {
     if (flash?.success) notify.success(flash.success);
     if (flash?.error) notify.error(flash.error);
@@ -34,7 +34,6 @@ const sidebarOpen = ref(false)
 
 <template>
     <div  class="min-h-screen !bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]flex flex-col">
-{{ page.props }}
 
         <Header @toggle-sidebar="sidebarOpen = true" />
 

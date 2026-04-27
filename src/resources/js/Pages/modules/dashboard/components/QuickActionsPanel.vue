@@ -1,13 +1,45 @@
+<script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
+
+</script>
+
 <template>
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 class="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
 
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <button class="action-btn">Open My Desk</button>
-            <button class="action-btn">Receive & Register</button>
-            <button class="action-btn">Temporary Files</button>
-            <button class="action-btn">Track Files</button>
-        </div>
+       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <Link 
+        :href="route('files.index')" 
+        as="button" 
+        class="action-btn text-center"
+    >
+        My Desk
+    </Link>
+
+    <Link 
+        :href="route('register.index')" 
+        as="button" 
+        class="action-btn text-center"
+    >
+        Receive & Register
+    </Link>
+
+    <Link 
+        :href="route('temp.file')" 
+        as="button" 
+        class="action-btn text-center"
+    >
+        Temporary Files
+    </Link>
+
+    <Link 
+        :href="route('mydesk.history')" 
+        as="button" 
+        class="action-btn text-center"
+    >
+        Track Files
+    </Link>
+</div>
     </div>
 </template>
 

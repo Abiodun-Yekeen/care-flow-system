@@ -61,13 +61,7 @@ const workload = [
                 <StatsCard title="Overdue Files" :value="summary.overdue" />
             </section>
 
-            <!-- My Work -->
-            <section class="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <StatsCard title="Assigned to Me" :value="myWork.assigned" />
-                <StatsCard title="Awaiting My Action" :value="myWork.awaiting" />
-                <StatsCard title="Submitted by Me" :value="myWork.submitted" />
-                <StatsCard title="Returned to Me" :value="myWork.returned" />
-            </section>
+            
 
             <!-- Middle -->
             <section class="grid grid-cols-1 gap-4 lg:grid-cols-2">
