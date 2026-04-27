@@ -34,7 +34,7 @@ const sidebarOpen = ref(false)
 
 <template>
     <div  class="min-h-screen !bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]flex flex-col">
-
+{{ page.props }}
 
         <Header @toggle-sidebar="sidebarOpen = true" />
 
