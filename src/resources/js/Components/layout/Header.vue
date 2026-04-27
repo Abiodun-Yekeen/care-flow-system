@@ -31,7 +31,7 @@ const emit = defineEmits(['toggle-sidebar'])
                         <Bars3Icon class="size-6" />
                     </button>
 
-                    <span class="font-bold text-sm sm:text-lg tracking-tight">FMC-EKITI</span>
+                    <span class="font-bold text-sm sm:text-lg tracking-tight">FTH IDO-EKITI</span>
                 </div>
                 <GlobalSearch/>
 
