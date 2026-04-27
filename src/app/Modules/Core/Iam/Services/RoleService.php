@@ -2,14 +2,9 @@
 
 namespace App\Modules\Core\Iam\Services;
 
-use App\Modules\Core\Iam\DTO\UserDTO;
 use App\Modules\Core\Iam\Models\Role;
-use App\Modules\Core\Iam\Models\User;
-use App\Modules\Core\Iam\Repository\Contracts\UserRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Maatwebsite\Excel\Facades\Excel;
 
 class RoleService
 {

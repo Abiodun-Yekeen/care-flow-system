@@ -2,13 +2,14 @@
 
 namespace App\Modules\Core\Iam\Providers;
 
+use App\Modules\Core\Iam\Models\User;
+use App\Modules\Core\Iam\Observers\UserObserver;
 use App\Modules\Core\Iam\Repository\Contracts\UserRepositoryInterface;
 use App\Modules\Core\Iam\Repository\Eloquent\UserRepository;
 use App\Modules\Core\Iam\Security\PolicyEvaluator;
 use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Iam\Services\PolicyBuilderService;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -40,19 +41,17 @@ class IamAuthorizationProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
-        // This connects $user->can() calls to your custom IAM logic.
-        Gate::before(function ($user, $ability, array $arguments) {
-            $iam = app(IamAuthorizationService::class);
+        User::observe(UserObserver::class);
 
-            $resource = null;
-            $context  = [];
+        Gate::before(function ($user, $ability, ...$arguments) {
 
-            if (is_array($arguments)) {
-                $resource = $arguments[0] ?? null;
-                $context  = $arguments[1] ?? [];
-            }
-            return $iam->authorize($user, $ability, $resource, $context);
+            $resource = $arguments[0] ?? null;
+            $context  = $arguments[1] ?? [];
 
+            return app(IamAuthorizationService::class)
+                ->can($user, $ability, $resource, $context)
+                ? true
+                : null;
         });
     }
 }

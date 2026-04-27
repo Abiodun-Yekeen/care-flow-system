@@ -6,6 +6,7 @@ namespace App\Modules\Core\Iam\Models;
 use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Iam\Traits\HasIamRoles;
 use App\Modules\Core\Shared\Models\FcmToken;
+use App\Modules\Core\Shared\Services\Cache\CacheManager;
 use App\Modules\OfficeFiles\File\Models\File;
 use App\Modules\OfficeFiles\Movement\Models\FileMovement;
 use App\Modules\Organization\Department\Models\Department;
@@ -69,7 +70,11 @@ class User extends Authenticatable
     }
     public function assignRole($role)
     {
-        return $this->roles()->syncWithoutDetaching($role);
+         $this->roles()->syncWithoutDetaching($role);
+
+        app(IamAuthorizationService::class)
+            ->forgetUserSnapshot($this->id);
+
 
     }
 
@@ -122,6 +127,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(FileMovement::class, 'acted_by_user_id');
     }
+
+    // In User.php model
+    public function flushIamCache()
+    {
+        app(CacheManager::class)->forget("iam:snapshot:user:{$this->id}");
+    }
+
+
+
     protected static function newFactory()
     {
         return UserFactory::new();

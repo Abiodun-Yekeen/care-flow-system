@@ -34,6 +34,13 @@ class File extends Model
         'closed_at',
     ];
 
+    protected $casts = [
+        'date_received' => 'datetime',
+        'last_movement_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'is_temporary' => 'boolean',
+    ];
+
     // RELATIONSHIPS
 
     public function users()

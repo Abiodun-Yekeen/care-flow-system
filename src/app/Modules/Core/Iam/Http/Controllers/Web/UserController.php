@@ -96,13 +96,14 @@ class UserController extends Controller
 
         $user->roles()->syncWithoutDetaching($data['role_ids']);
 
+        $user->flushIamCache();
         return back()->with('success', 'Roles assigned successfully.');
     }
 
     public function removeRole(User $user, Role $role)
     {
         $user->roles()->detach($role->id);
-
+        $user->flushIamCache();
         return back()->with('success', 'Role removed successfully.');
     }
 

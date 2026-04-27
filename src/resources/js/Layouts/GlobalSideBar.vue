@@ -14,7 +14,7 @@ import { useNavigationStore } from "@/core/stores/useNavigationStore.js"
 import {Link} from "@inertiajs/vue3";
 
 const navigationStore = useNavigationStore()
-const { modules } = storeToRefs(navigationStore)
+const { sidebarModules: modules } = storeToRefs(navigationStore)
 
 defineProps({
     open: Boolean,
@@ -24,6 +24,8 @@ defineEmits(['close'])
 </script>
 
 <template>
+
+
     <TransitionRoot as="template" :show="open">
         <Dialog as="div" class="relative z-40" @close="$emit('close')">
 

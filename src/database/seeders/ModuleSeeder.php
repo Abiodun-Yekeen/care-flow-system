@@ -16,7 +16,7 @@ class ModuleSeeder extends Seeder
 
         DB::transaction(function () {
 
-            foreach (config('modules.default') as $parentConfig) {
+            foreach (config('resources.default') as $parentConfig) {
 
                 $parent = $this->upsertModule($parentConfig);
 

@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Modules\Core\Shared\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+          //  \App\Modules\Core\Iam\Http\Middleware\CheckDafultPasswordMiddleware::class,
         ]);
 
     })

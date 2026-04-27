@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Modules\Core\Iam\Services\IamAuthorizationService;
+use App\Modules\Core\Shared\Services\PermissionCompilerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +15,10 @@ use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
+    public function __construct(Private IamAuthorizationService $iamService)
+    {
+
+    }
     /**
      * Display the login view.
      */
@@ -40,10 +46,12 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
-
         $user = auth()->user();
+        app(PermissionCompilerService::class)->compile($user);
+//
 
-        audit()->log([
+
+audit()->log([
             'category' => 'SYSTEM',
             'action' => 'login',
             'resource_type' => 'users',

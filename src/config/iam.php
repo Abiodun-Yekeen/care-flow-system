@@ -22,17 +22,63 @@ return [
     ],
 
     'actions' => [
-        'staff' => ['view', 'create', 'update', 'deactivate', 'list'],
-        'departments' => ['view', 'create', 'update', 'list'],
-        'locations' => ['view', 'create', 'update', 'list'],
-        'schedules' => ['view', 'create', 'update', 'list'],
 
-        'users' => ['view', 'create', 'update', 'delete', 'list'],
-        'roles' => ['view', 'create', 'update', 'delete', 'list', 'attach'],
-        'modules' => ['view', 'enable', 'disable', 'list'],
-        'audit' => ['view', 'export', 'list'],
+        'dashboard' => ['view'],
 
-        'reports' => ['view', 'create', 'export', 'schedule'],
+        'registry' => [
+            'view',
+            'view_dept',
+            'create',
+            'submit',
+            'upload'
+        ],
+
+        'temporary_files' => [
+            'view',
+            'view_dept',
+            'create',
+            'submit',
+            'upload'
+        ],
+
+        'tracking' => [
+            'view',
+            'view_dept_history',
+            'search_dept'
+        ],
+
+        'my_desk' => [
+            'view'
+        ],
+
+        'files' => [
+            'view',
+            'view_assigned',
+            'treat',
+            'attach_document'
+        ],
+
+        'documents' => [
+            'view',
+            'attach'
+        ],
+
+        'routing' => [
+            'route_to_hod'
+        ],
+
+     'admin' => [
+        'view',
+        'create',
+        'update',
+        'delete',
+        'attach'
+    ],
+
+
+        'users' => ['view', 'create', 'update', 'delete'],
+        'roles' => ['view', 'create', 'update', 'delete', 'attach'],
+        'policies' => ['view', 'create', 'update', 'delete'],
     ],
 
     'audit' => [

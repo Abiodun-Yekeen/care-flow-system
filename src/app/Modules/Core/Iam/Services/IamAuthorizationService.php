@@ -8,6 +8,8 @@ use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Security\Arn;
 use App\Modules\Core\Iam\Security\PolicyEvaluator;
 use App\Modules\Core\Shared\Models\Module;
+use App\Modules\Core\Shared\Services\Cache\CacheManager;
+use App\Modules\Core\Shared\Services\PermissionCompilerService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -113,7 +115,12 @@ class IamAuthorizationService
 
         $possibleActions = config("iam.actions.{$resourceKey}", ['view', 'create', 'update', 'delete']);
         $policies = $this->getUserPolicies($user);
-
+        \Log::info("IAM Compiler Sync Check for Resource: {$resourceKey}", [
+            'arn' => $arn->toString(),
+            'policy_count' => $policies->count(),
+            'policy_ids' => $policies->pluck('id')->toArray(),
+            'user_id' => $user->id
+        ]);
         return $this->evaluator->getAllowedActions(
             $policies,
             $possibleActions,
@@ -265,7 +272,6 @@ class IamAuthorizationService
         }
     }
 
-
     public function getPermissionMatrix(User $user): array
     {
         $policies = $this->getUserPolicies($user);
@@ -282,6 +288,8 @@ class IamAuthorizationService
                     continue;
                 }
 
+                $actions = $statement->getActions();
+
                 foreach ($statement->getResources() as $resource) {
 
                     // -----------------------------------
@@ -289,86 +297,114 @@ class IamAuthorizationService
                     // -----------------------------------
                     if ($resource === '*') {
 
-                        $allModules = Module::pluck('key')->toArray();
-                        $allActions = ['view', 'create', 'update', 'delete']; // or from DB
+                        $allResources = Resource::pluck('key')->toArray();
+                        $allActions = config('iam.actions');
 
-                        foreach ($allModules as $moduleKey) {
+                        $flatActions = collect($allActions)->flatten()->unique()->toArray();
 
+                        foreach ($allResources as $resourceKey) {
                             foreach (
-                                in_array('*', $statement->getActions())
-                                    ? $allActions
-                                    : $statement->getActions()
+                                in_array('*', $actions)
+                                    ? $flatActions
+                                    : $actions
                                 as $action
                             ) {
-                                $permissions[$moduleKey][] = $action;
+                                $permissions[$resourceKey][] = $action;
                             }
                         }
 
                         continue;
                     }
 
-                    if (!str_starts_with($resource, 'arn:cf:')) {
+                    // -----------------------------------
+                    // Parse ARN (IAM layer)
+                    // -----------------------------------
+                    $arn = Arn::fromString($resource);
+
+                    if (!$arn) {
                         continue;
                     }
 
-                    $parts = explode(':', $resource);
+                    $resourceModel = Resource::findByArn($arn);
 
-
-
-                    $parent = $parts[2] ?? null;
-                    $child  = $parts[3] ?? null;
-
-                    if (!$parent) {
+                    if (!$resourceModel) {
                         continue;
                     }
 
-                    $actions = $statement->getActions();
+                    $parent = $resourceModel->module_key;
+                    $child  = $resourceModel->key;
 
                     // -----------------------------------
-                    // CASE 1: Wildcard Parent
+                    // CASE 1: Wildcard resource (registry:*)
                     // -----------------------------------
-                    if ($child === '*') {
+                    if ($arn->getResourceId() === '*' || str_ends_with($resource, ':*')) {
 
-                        $children = Module::whereHas('parent', function ($q) use ($parent) {
-                            $q->where('key', $parent);
-                        })->pluck('key')->toArray();
+                        $children = Resource::where('module_key', $parent)
+                            ->pluck('key')
+                            ->toArray();
 
-                        foreach ($children as $moduleKey) {
+                        foreach ($children as $resourceKey) {
                             foreach ($actions as $action) {
-                                $permissions[$moduleKey][] = $action;
+                                $permissions[$resourceKey][] = $action;
                             }
                         }
 
                         continue;
                     }
 
+                    // ----------------------- re------------
+                    // CASE 2: Specificsource
                     // -----------------------------------
-                    // CASE 2: Explicit Child
-                    // -----------------------------------
-                    if ($child) {
+                    $resourceModel = Resource::where('module_key', $parent)
+                        ->where('key', $child)
+                        ->first();
 
-                        foreach ($actions as $action) {
-                            $permissions[$child][] = $action;
-                        }
-
+                    if (!$resourceModel) {
                         continue;
                     }
 
-                    // -----------------------------------
-                    // CASE 3: Direct Module
-                    // -----------------------------------
                     foreach ($actions as $action) {
-                        $permissions[$parent][] = $action;
+                        $permissions[$resourceModel->key][] = $action;
                     }
                 }
             }
         }
 
+        // -----------------------------------
         // Remove duplicates
-        foreach ($permissions as $module => $actions) {
-            $permissions[$module] = array_values(array_unique($actions));
+        // -----------------------------------
+        foreach ($permissions as $key => $actions) {
+            $permissions[$key] = array_values(array_unique($actions));
         }
 
         return $permissions;
+    }
+
+    public function can(User $user, string $action, string $resource, array $context = []): bool
+    {
+
+        $key = "iam:snapshot:user:{$user->id}";
+
+        $snapshot = $this->cache->get($key);
+
+
+        if (!$snapshot) {
+            $snapshot = app(PermissionCompilerService::class)->compile($user);
+        }
+
+        return in_array($action, $snapshot[$resource] ?? []);
+    }
+
+    public function buildSnapshot(User $user): array
+    {
+        $permissions = $this->getPermissionMatrix($user);
+          app(CacheManager::class)->put("iam:snapshot:user:{$user->id}", $permissions, 3600);
+
+        return $permissions;
+    }
+
+    public function forgetUserSnapshot(int $userId): void
+    {
+        app(CacheManager::class)->forget("iam:snapshot:user:{$userId}");
     }
 }

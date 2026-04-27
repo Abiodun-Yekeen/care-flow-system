@@ -7,6 +7,7 @@ use App\Modules\Core\Iam\Http\Requests\RoleRequest;
 use App\Modules\Core\Iam\Models\Policy;
 use App\Modules\Core\Iam\Models\Role;
 use App\Modules\Core\Iam\Services\EffectiveAccessService;
+use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Iam\Services\RoleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -88,6 +89,7 @@ class RoleController extends Controller
         ]);
 
         $role->policies()->syncWithoutDetaching($data['policy_ids']);
+        $this->invalidateRoleUsers($role);
 
         return back()->with('success', 'Policies attached successfully.');
     }
@@ -95,7 +97,7 @@ class RoleController extends Controller
     public function detachPolicy(Role $role, Policy $policy)
     {
         $role->policies()->detach($policy->id);
-
+        $this->invalidateRoleUsers($role);
         return back()->with('success', 'Policy detached successfully.');
     }
 
@@ -123,5 +125,15 @@ class RoleController extends Controller
         return response()->json([
             'data' => $this->accessService->resolveRoleMatrix($role),
         ]);
+    }
+
+    protected function invalidateRoleUsers(Role $role): void
+    {
+        $userIds = $role->users()->pluck('id');
+
+        foreach ($userIds as $userId) {
+            app(IamAuthorizationService::class)
+                ->forgetUserSnapshot($userId);
+        }
     }
 }

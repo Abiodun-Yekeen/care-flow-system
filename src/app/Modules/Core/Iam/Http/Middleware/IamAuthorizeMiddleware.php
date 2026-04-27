@@ -7,50 +7,69 @@ use Illuminate\Http\Request;
 
 class IamAuthorizeMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next, ?string $action = null, ?string $resource = null)
-    {
+    public function __construct(
+        protected IamAuthorizationService $iam
+    ) {}
+
+    public function handle(
+        Request $request,
+        Closure $next,
+        ?string $action = null,
+        ?string $resource = null
+    ) {
         $user = $request->user();
 
         if (!$user) {
             abort(401);
         }
 
-        // Fallback action if not provided in middleware params
+        // Fallback action (map controller → IAM action)
         if (!$action) {
-            $action = $request->route()->getActionMethod(); // e.g., 'index', 'store'
+            $action = $this->mapAction(
+                $request->route()->getActionMethod()
+            );
         }
 
-        // Resolve resource from request if not provided
+        // Resolve resource
         if (!$resource) {
             $resource = $this->resolveResource($request);
         }
 
-        // Check authorization
-        if (!$user->can($action, $resource)) {
+        // ✅ USE IAM (snapshot-powered)
+        if (!$this->iam->can($user, $action, $resource)) {
             abort(403, "Unauthorized: {$action} on {$resource}");
         }
 
         return $next($request);
     }
+
     protected function resolveResource(Request $request): string
     {
-        // Try to get from route parameter
+        // Priority 1: explicit route param
         if ($request->route('resource')) {
             return $request->route('resource');
         }
 
-        // Derive from route name
-        $routeName = $request->route()->getName();
-        if ($routeName) {
-            $parts = explode('.', $routeName);
-            return $parts[0] ?? 'unknown';
+        // Priority 2: route name (recommended)
+        if ($routeName = $request->route()->getName()) {
+            return explode('.', $routeName)[0];
         }
 
         return 'unknown';
+    }
+
+    /**
+     * Map Laravel controller methods → IAM actions
+     */
+    protected function mapAction(string $method): string
+    {
+        return match ($method) {
+            'index'   => 'list',
+            'show'    => 'view',
+            'store'   => 'create',
+            'update'  => 'update',
+            'destroy' => 'delete',
+            default   => $method, // fallback (e.g., 'export', 'submit')
+        };
     }
 }

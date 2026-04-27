@@ -53,8 +53,8 @@ const submit = () => {
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Attached Files</h3>
                         <span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                {{ file_receive.file.documents?.length || 0 }}
-            </span>
+                         {{ file_receive.file.documents?.length || 0 }}
+                    </span>
                     </div>
 
                     <div class="flex flex-col gap-3">
@@ -125,81 +125,4 @@ const submit = () => {
         </div>
     </ContextModuleLayout>
 </template>
-
-
-
-<!--<script setup>-->
-<!--import ContextModuleLayout from "@/Components/layout/ContextModuleLayout.vue"-->
-<!--import {Head, router, useForm, usePage} from "@inertiajs/vue3";-->
-<!--import CreateTemporaryFile from "@/Pages/modules/registry/components/CreateTemporaryFile.vue";-->
-<!--import {EditformData} from "@/Pages/modules/registry/services/formData.js";-->
-<!--import PageHeader from "@/Components/layout/PageHeader.vue";-->
-<!--import ValidationErrors from "@/Components/forms/ValidationErrors.vue";-->
-<!--import LoadButton from "@/Components/ui/LoadButton.vue";-->
-<!--import {useNotificationStore} from "@/core/stores/useNotificationStore.js";-->
-<!--import FormInput from "@/Components/forms/FormInput.vue";-->
-
-<!--const notify = useNotificationStore()-->
-
-<!--const props = defineProps({-->
-<!--    file_receive: Object,-->
-<!--})-->
-<!--const form = useForm(EditformData(props))-->
-<!--const submit = (isDraft = false) => {-->
-<!--    form.clearErrors();-->
-<!--    form.is_draft = isDraft; // Pass this to your Laravel controller-->
-<!--    form.post(route('register.store') , {-->
-<!--        preserveScroll: true,-->
-<!--        onSuccess: () => {-->
-<!--           // notify.success("File submitted successfully.");-->
-<!--            form.reset()-->
-<!--        },-->
-<!--    });-->
-<!--};-->
-
-
-<!--</script>-->
-<!--<template>-->
-<!--    <ContextModuleLayout>-->
-<!--        <Head title= "Create Temporary File"/>-->
-
-<!--        <div class="h-full flex flex-col bg-white overflow-hidden">-->
-<!--        <PageHeader-->
-<!--            title="Receive & Register File"-->
-<!--            subtitle="Create a new Temporary File."-->
-<!--        />-->
-
-<!--            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 overflow-y-auto flex-1">-->
-
-<!--                    <main class="col-span-4 lg:col-span-3">-->
-<!--                        <div class=" max-w-2xl bg-white   overflow-hidden flex flex-col">-->
-
-<!--                            <div class=" ">-->
-<!--                                <ValidationErrors :errors="form.errors" class="mb-6" />-->
-<!--                                <CreateTemporaryFile :form="form"/>-->
-
-<!--                            </div>-->
-<!--                        </div>-->
-
-<!--                        <div class="p-4 flex flex-row flex-nowrap gap-2">-->
-
-<!--                            <LoadButton-->
-<!--                                type="button"-->
-<!--                                :loading="form.processing && !form.is_draft"-->
-<!--                                :disabled="form.processing"-->
-<!--                                @click="submit(false)">-->
-<!--                                {{ form.processing && !form.is_draft ? 'Submitting...' : 'Submit' }}-->
-<!--                            </LoadButton>-->
-<!--                        </div>-->
-
-<!--                    </main>-->
-
-<!--                </div>-->
-
-<!--            </div>-->
-<!--    </ContextModuleLayout>-->
-<!--</template>-->
-
-
-
 

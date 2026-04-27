@@ -9,7 +9,7 @@ class Resource extends Model
 {
     protected $table = 'resources';
 
-    protected $fillable = ['key', 'name', 'module_key', 'metadata'];
+    protected $fillable = ['key', 'name', 'module_key', 'metadata','parent_id','route','icon','order','is_active'];
 
     protected $casts = [
         'metadata' => 'array',
@@ -19,7 +19,7 @@ class Resource extends Model
     {
         return Arn::build(
             $this->module_key,
-            $this->key
+            "{$this->key}:*"
         );
     }
 
@@ -46,5 +46,27 @@ class Resource extends Model
     public function getAvailableActions(): array
     {
         return config("iam.actions.{$this->key}", ['view', 'create', 'update', 'delete']);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Resource::class, 'parent_id');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Resource::class, 'parent_id')
+            ->where('is_active', true)
+            ->orderBy('order');
+    }
+
+    public function childrenRecursive()
+    {
+        return $this->children()->with('childrenRecursive');
     }
 }

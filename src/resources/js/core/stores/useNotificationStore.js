@@ -2,6 +2,7 @@ import { defineStore } from "pinia"
 import notificationSound from '@/assests/notification.mp3';
 import { onMessage } from "firebase/messaging";
 import { messaging } from "@/firebase";
+import {router} from "@inertiajs/vue3";
 export const useNotificationStore = defineStore("notification", {
     state: () => ({
         // The active banner notification
@@ -26,11 +27,11 @@ export const useNotificationStore = defineStore("notification", {
             this.current.type = type;
             this.current.visible = true;
 
-            // if (duration > 0) {
-            //     this.timeout = setTimeout(() => {
-            //         this.hide();
-            //     }, duration);
-            // }
+            if (duration > 0) {
+                this.timeout = setTimeout(() => {
+                    this.hide();
+                }, duration);
+            }
         },
 
         hide() {
@@ -118,7 +119,7 @@ export const useNotificationStore = defineStore("notification", {
                 }
 
                 const fullMessage = `${actionPrefix} ${data.message}`;
-console.log(fullMessage)
+
                 // UI behavior (same logic as Echo)
                 if (data.priority === 'immediate') {
                     this.addCriticalAlert('error', `IMMEDIATE: ${fullMessage}`);
@@ -147,11 +148,22 @@ console.log(fullMessage)
         listenForNotifications(userId) {
             if (!userId) return;
 
-            window.Echo.private(`App.Modules.Core.Iam.Models.User.${userId}`)
-                .notification((notification) => {
+            const userChannel = window.Echo.private(`App.Modules.Core.Iam.Models.User.${userId}`);
 
-                    this.handleIncomingNotification(notification);
+            // Existing Notification Listener
+            userChannel.notification((notification) => {
+                this.handleIncomingNotification(notification);
+            });
+
+            // Silent File Refresh
+            userChannel.listen('.FileSent', (e) => {
+                // This only fetches the 'files' data from the server
+                router.reload({
+                    only: ['files'],
+                    preserveScroll: true,
+                    preserveState: true
                 });
+            });
         },
             // You can still keep your public channel listeners here too
             // window.Echo.channel("clinical-alerts")

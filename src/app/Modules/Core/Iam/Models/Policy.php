@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Policy extends Model
 {
-    protected $fillable = ['name', 'description', 'statement', 'version', 'is_emr_managed', 'metadata'];
+    protected $guarded = [];
 
     protected $casts = [
         'statement' => 'array',

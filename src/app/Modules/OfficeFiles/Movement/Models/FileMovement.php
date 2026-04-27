@@ -6,6 +6,7 @@ use App\Modules\Core\Iam\Models\User;
 use App\Modules\OfficeFiles\File\Models\File;
 use App\Modules\Organization\Department\Models\Department;
 use Illuminate\Database\Eloquent\Model;
+use Str;
 
 class FileMovement extends Model
 {
@@ -25,6 +26,18 @@ class FileMovement extends Model
         'received_at',
     ];
 
+    protected $appends = [
+    'from_user_name', 
+    'to_user_name', 
+    'from_dept_name', 
+    'to_dept_name'
+];
+
+
+protected $casts = [
+        'acted_at' => 'datetime',
+    
+    ];
     public function file()
     {
         return $this->belongsTo(File::class);
@@ -60,4 +73,29 @@ class FileMovement extends Model
         return $this->belongsTo(User::class, 'received_by_user_id');
     }
 
+    // Accessor for From User Name
+    public function getFromUserNameAttribute()
+    {
+      $name = $this->fromUser?->name ?? 'system';
+      return Str::title(strtolower($name));
+
+    }
+
+    // Accessor for To User Name
+    public function getToUserNameAttribute()
+    {
+        return $this->toUser?->name ?? 'Pending';
+    }
+
+    // Accessor for From Dept Name
+    public function getFromDeptNameAttribute()
+    {
+        return $this->fromDepartment?->name;
+    }
+
+    // Accessor for To Dept Name
+    public function getToDeptNameAttribute()
+    {
+        return $this->toDepartment?->name;
+    }
 }

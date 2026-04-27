@@ -64,7 +64,7 @@ class PolicyController extends Controller
             'document.version' => ['nullable', 'string'],
             'document.statements' => ['required', 'array', 'min:1'],
         ]);
-
+         dd($data);
         $policy->update($data);
 
         return back()->with('success', 'Policy updated successfully.');

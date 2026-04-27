@@ -10,8 +10,8 @@ import WorkloadPanel from "@/Pages/modules/dashboard/components/WorkloadPanel.vu
 import BreadCrumb from "@/Components/layout/BreadCrumb.vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
-const name = usePage().props.auth.user.name;
-const role = usePage().props.auth.role;
+const user = usePage().props.auth.user;
+const navigation =  usePage().props.navigation;
 // Dummy data (replace with API later)
 const summary = {
     active: 248,
@@ -44,13 +44,14 @@ const workload = [
 <template>
     <Head title="Dashboard" />
 
+
     <AuthenticatedLayout>
         <BreadCrumb/>
     <div class="min-h-screen bg-white p-4 sm:p-6">
         <div class="mx-auto max-w-7xl space-y-6">
 
             <!-- Header -->
-            <DashboardHeader :name="name"  :role="role"/>
+            <DashboardHeader :name="user.name"  :role="user.role_name"/>
 
             <!-- Global Summary -->
             <section class="grid grid-cols-1 gap-4 md:grid-cols-4">

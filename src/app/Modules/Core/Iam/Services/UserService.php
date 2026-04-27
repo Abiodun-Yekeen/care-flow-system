@@ -59,6 +59,7 @@ class UserService
                 $dto->department_id => ['is_primary' => true]
             ]);
         }
+        $user->flushIamCache();
 
         return $user->refresh();
     }

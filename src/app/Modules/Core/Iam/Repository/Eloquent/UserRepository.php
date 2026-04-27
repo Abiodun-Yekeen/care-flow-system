@@ -5,6 +5,7 @@ namespace App\Modules\Core\Iam\Repository\Eloquent;
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Repository\Contracts\UserRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
+
 class UserRepository implements UserRepositoryInterface
 {
     protected $model;

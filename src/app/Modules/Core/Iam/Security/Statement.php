@@ -11,14 +11,17 @@ class Statement
     private array $resources;
     private array $conditions;
 
-    public function __construct(string $effect,array $actions, array $resources,?string $sid = null,array $conditions = [])
+    public function __construct(string $effect, array $actions, array $resources, ?string $sid = null, array $conditions = [])
     {
-        if (!in_array($effect, ['Allow', 'Deny'])) {
-            throw new \InvalidArgumentException("Effect must be 'Allow' or 'Deny'");
+        // FIX: Convert to Title Case to match the strict check
+        $normalizedEffect = ucfirst(strtolower($effect));
+
+        if (!in_array($normalizedEffect, ['Allow', 'Deny'])) {
+            throw new \InvalidArgumentException("Effect must be 'Allow' or 'Deny'. Received: {$effect}");
         }
 
         $this->sid = $sid ?? uniqid('stmt-', true);
-        $this->effect = $effect;
+        $this->effect = $normalizedEffect; // Store as 'Allow'
         $this->actions = $actions;
         $this->resources = $resources;
         $this->conditions = $conditions;
@@ -92,19 +95,45 @@ class Statement
         return !empty($this->conditions);
     }
 
+//    private function matchesPattern(string $pattern, string $value): bool
+//    {
+//        if ($pattern === '*') {
+//            return true;
+//        }
+//
+//        // Escape special characters
+//        $regex = preg_quote($pattern, '/');
+//
+//        // Replace the escaped asterisk (\*) with the regex wildcard (.*)
+//        $regex = str_replace('\*', '.*', $regex);
+//
+//        // Add anchors and case-insensitive flag
+//        return (bool) preg_match('/^' . $regex . '$/i', $value);
+//    }
+
     private function matchesPattern(string $pattern, string $value): bool
     {
-        if ($pattern === '*') {
-            return true;
+        if ($pattern === '*') return true;
+
+        // Exact Match (Case Insensitive)
+        if (strcasecmp($pattern, $value) === 0) return true;
+
+        //  Handle the "Parent/Child" logic
+        // This allows "arn:...:registry:*" to match "arn:...:registry"
+        if (str_ends_with($pattern, ':*')) {
+            $baseResource = substr($pattern, 0, -2); // Remove the ':*'
+
+            // If the value being checked is exactly the base resource
+            if (strcasecmp($baseResource, $value) === 0) {
+                return true;
+            }
         }
 
-        // Escape special characters
+        // Standard Regex Wildcard Matching
+        // Convert glob (*) to regex (.*)
         $regex = preg_quote($pattern, '/');
-
-        // Replace the escaped asterisk (\*) with the regex wildcard (.*)
         $regex = str_replace('\*', '.*', $regex);
 
-        // Add anchors and case-insensitive flag
         return (bool) preg_match('/^' . $regex . '$/i', $value);
     }
 
@@ -126,12 +155,13 @@ class Statement
 
     public static function fromArray(array $data): self
     {
+        // Map lowercase JSON keys to the class properties
         return new self(
-            $data['Effect'],
-            (array) $data['Action'],
-            (array) $data['Resource'],
-            $data['Sid'] ?? null,
-            $data['Condition'] ?? []
+            $data['Effect'] ?? $data['effect'] ?? 'Deny',
+            (array)($data['Action'] ?? $data['actions'] ?? []),
+            (array)($data['Resource'] ?? $data['resources'] ?? []),
+            $data['Sid'] ?? $data['sid'] ?? null,
+            $data['Condition'] ?? $data['condition'] ?? []
         );
     }
 }

@@ -35,10 +35,10 @@ const submit = (isDraft = false) => {
         <Head title= "Create Temporary File"/>
 
         <div class="h-full flex flex-col bg-white overflow-hidden">
-        <PageHeader
-            title="Receive & Register File"
-            subtitle="Create a new Temporary File."
-        />
+            <PageHeader
+                title="Receive & Register File"
+                subtitle="Create a new Temporary File."
+            />
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 overflow-y-auto flex-1">
 

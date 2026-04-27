@@ -61,8 +61,10 @@ class Arn
 
     public function getResourceId(): ?string
     {
-        $parts = preg_split('/[:/]/', $this->resource, 2);
+        // Use # as a delimiter instead of /
+        $parts = preg_split('#[:/]#', $this->resource, 2);
         return $parts[1] ?? null;
+
     }
 
     public function toString(): string

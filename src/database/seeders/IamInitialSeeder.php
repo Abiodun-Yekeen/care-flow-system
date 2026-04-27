@@ -7,6 +7,7 @@ use App\Modules\Core\Iam\Models\Role;
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Services\PolicyBuilderService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class IamInitialSeeder extends Seeder
@@ -19,22 +20,40 @@ class IamInitialSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $resources = [
-            ['key' => 'dashboard',         'module_key' => 'dashboard',    'name' => 'Dashboard'],
-            ['key' => 'my_desk',           'module_key' => 'office_files', 'name' => 'Work Desk'],
-            ['key' => 'registry',          'module_key' => 'office_files', 'name' => 'Registry Intake'],
-            ['key' => 'temporary_files',   'module_key' => 'office_files', 'name' => 'Temporary Files'],
-            ['key' => 'files',             'module_key' => 'office_files', 'name' => 'File Records'],
-            ['key' => 'documents',         'module_key' => 'office_files', 'name' => 'Scanned Documents'], // Added
-            ['key' => 'routing',           'module_key' => 'office_files', 'name' => 'File Routing/Movements'], // Added
-            ['key' => 'tracking',          'module_key' => 'office_files', 'name' => 'Tracking & Audit'],
-            ['key' => 'organization',      'module_key' => 'organization', 'name' => 'Organization Management'],
-            ['key' => 'admin',             'module_key' => 'admin',        'name' => 'System Administration'],
-        ];
+        DB::transaction(function () {
 
-        foreach ($resources as $res) {
-            Resource::firstOrCreate(['key' => $res['key']], $res);
-        }
+
+            foreach (config('resources.default') as $parentConfig) {
+                // Determine the service name (e.g., 'office_files')
+                // use resource key if module_key isn't set
+                $serviceName = $parentConfig['module_key'] ?? $parentConfig['key'];
+
+                $parent = Resource::updateOrCreate(
+                    ['key' => $parentConfig['key']],
+                    [
+                        'name' => $parentConfig['label'],
+                        'module_key' => $serviceName,
+                        'route' => $parentConfig['route'] ?? null,
+                        'icon' => $parentConfig['icon'] ?? null,
+                        'order' => $parentConfig['order'] ?? 0,
+                        'parent_id' => null,
+                    ]
+                );
+
+                foreach ($parentConfig['children'] ?? [] as $childConfig) {
+                    Resource::updateOrCreate(
+                        ['key' => $childConfig['key']],
+                        [
+                            'name' => $childConfig['label'],
+                            'module_key' => $serviceName,
+                            'route' => $childConfig['route'] ?? null,
+                            'icon' => $childConfig['icon'] ?? null,
+                            'parent_id' => $parent->id,
+                        ]
+                    );
+                }
+            }
+        });
         /*
         |--------------------------------------------------------------------------
         | 2. DEFINE POLICIES
@@ -43,22 +62,33 @@ class IamInitialSeeder extends Seeder
 
         // BASIC ACCESS (Everyone gets Dashboard)
         $basicUserPolicy = $builder->new()
-            ->statement('base')
-            ->allow()->action(['view'])->resource(['arn:cf:core:dashboard:*'])
-            ->end()->create('BasicUserPolicy', 'Core access');
-
+            ->statement('dashboard-access')
+            ->allow()
+            ->action(['view'])
+            ->resource(['arn:cf:dashboard:dashboard:*'])
+            ->end()
+            ->statement('profile-access')
+            ->allow()
+            ->action(['view', 'update'])
+            ->resource(["arn:cf:organization:users:\${user_id}"])
+            ->end()
+            ->create('BasicUserPolicy', 'Core system access for all staff');
         // REGISTRY (Intake + Tracking visibility)
         $registryPolicy = $builder->new()
             ->statement('intake')
-            ->allow()->action(['view_dept', 'create', 'submit', 'upload'])
+            ->allow()->action(['view','view_dept', 'create', 'submit', 'upload'])
             ->resource([
                 'arn:cf:office_files:registry:*',
-                'arn:cf:office_files:temporary_files:*'
+                'arn:cf:office_files:temporary_files:*',
+                "arn:cf:office_files:receive_register:*",
             ])
             ->end()
             ->statement('registry-tracking')
-            ->allow()->action(['view_dept_history', 'search_dept'])
-            ->resource(['arn:cf:office_files:tracking:*']) // Can check movement for people
+            ->allow()->action(['view','view_dept_history', 'search_dept'])
+            ->resource([
+                'arn:cf:office_files:tracking:*',
+                "arn:cf:office_files:current_location:*",
+            ]) // Can check movement for people
             ->end()->create('RegistryPolicy', 'Registry operations and departmental tracking');
 
         // STAFF (Work Desk + File Processing)
@@ -128,6 +158,7 @@ class IamInitialSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         $rolesConfig = [
+            'user'=>['display' => 'Default User', 'policies' => [$basicUserPolicy->id]],
             'super-admin' => ['display' => 'Super Administrator', 'policies' => ['*']],
             'system-admin' => ['display' => 'System Administrator', 'policies' => [$systemAdminPolicy->id]],
             'director' => ['display' => 'Director / DMS', 'policies' => [$dmsPolicy->id, $auditorPolicy->id]],

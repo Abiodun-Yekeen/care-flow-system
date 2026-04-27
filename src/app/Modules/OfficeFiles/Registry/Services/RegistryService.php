@@ -1,6 +1,6 @@
 <?php
 namespace App\Modules\OfficeFiles\Registry\Services;
-use App\Jobs\SendFcmNotification;
+use App\Events\FileSent;
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Repository\Contracts\UserRepositoryInterface;
 use App\Modules\Core\Shared\Services\Firebase\FcmService;
@@ -9,11 +9,9 @@ use App\Modules\OfficeFiles\Registry\DTO\RegistryDTO;
 use App\Modules\OfficeFiles\Registry\Models\FileReceive;
 use App\Modules\OfficeFiles\Registry\Repository\Contracts\RegistryInterface;
 use App\Modules\Organization\Department\Models\Department;
-use App\Notifications\FileNotification;
 use App\Notifications\FileSubmittedToHOD;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class RegistryService
@@ -63,7 +61,7 @@ class RegistryService
                 'source_name' => $dto->source_name,
                 'source_reference_no' => $dto->source_reference_no,
                 'remark' => $dto->remark,
-                'status' => $is_draft ? 'draft' : 'submitted_to_hod',
+                'status' => $is_draft ? 'draft' : 'pending',
                 'priority' => $dto->priority ,
                 'current_department_id' => $department->id,
                 'current_holder_user_id' => $hodUserId, // The HOD is now the holder
@@ -112,6 +110,7 @@ class RegistryService
                 $hod = $this->userRepository->findById($hodUserId);
                 if ($hod) {
                   $this->notifyUser($user,$file,$hod);
+                    event(new FileSent($file, $hodUserId));
                   // Push Notification
 //                    SendFcmNotification::dispatch(
 //                        $user,
@@ -214,7 +213,7 @@ class RegistryService
                 'source_name' => $dto->source_name,
                 'source_reference_no' => $dto->source_reference_no,
                 'remark' => $dto->remark,
-                'status' => 'submitted_to_hod',
+                'status' => 'pending',
                 'priority' => $dto->priority,
             ]);
 
@@ -226,12 +225,25 @@ class RegistryService
                 'submitted_at' => now(),
             ]);
 
+            $file->movements()->update([
+             
+                'acted_by_user_id' => auth()->id,
+                'movement_type' => 'submitted_to_hod',
+                'movement_status' => 'pending',
+                'remarks' => $dto->remark,
+                'minute' => 'File submitted from registry to HOD.',
+                'acted_at' => now(),
+            ]);
+
+
+
             //  Upload documents (Handling UploadedFile objects from dd($dto))
             $this->uploadFile($dto, $file);
 
             //Send Notification
             if ($hod) {
                 $hod->notify(new FileSubmittedToHOD($file,'new_submission'));
+                event(new FileSent($file, $file->current_holder_user_id));
             }
 
         });

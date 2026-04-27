@@ -29,15 +29,20 @@ const currentModuleIcon = computed(() => {
 
 //  sub-navigation logic using the store
 const subNavigation = computed(() => {
-    const items = storeSubNav.value ?? [] // Use store value
-    const baseSegment = pathSegments[0] ? `/${pathSegments[0]}` : '/dashboard'
-    return [{
-        key: 'overview',
-        label: 'Overview',
-        icon: 'overview',
-        route: baseSegment
-    }, ...items]
-})
+    // These are the 'children' we found in the store's updateNavigation action
+    const items = storeSubNav.value ?? [];
+    const baseSegment = pathSegments[0] ? `/${pathSegments[0]}` : '/dashboard';
+
+    return [
+        {
+            key: 'overview',
+            label: 'Overview',
+            icon: 'overview',
+            route: baseSegment
+        },
+        ...items // These are now the children (view_dept, create, etc.)
+    ];
+});
 
 const isActive = (item) => {
     if (item.key === 'overview') return page.url === item.route;

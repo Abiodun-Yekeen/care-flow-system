@@ -13,9 +13,17 @@ return new class extends Migration
     {
         Schema::create('resources', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique(); // e.g., 'patients', 'lab_results'
+            $table->string('key')->unique();
             $table->string('name');
-            $table->string('module_key'); // Which module it belongs to
+            $table->string('module_key');
+
+            // 👇 ADD THESE
+            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->string('route')->nullable();
+            $table->string('icon')->nullable();
+            $table->integer('order')->default(0);
+            $table->boolean('is_active')->default(true);
+
             $table->json('metadata')->nullable();
             $table->timestamps();
 

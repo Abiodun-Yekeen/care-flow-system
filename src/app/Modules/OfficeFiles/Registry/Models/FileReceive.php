@@ -11,6 +11,11 @@ class FileReceive extends Model
 {
     protected $guarded=[];
 
+     protected $casts = [
+        'deadline_at' => 'datetime',
+    
+    ];
+
     public function file()
     {
         return $this->belongsTo(File::class);

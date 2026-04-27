@@ -9,7 +9,8 @@ use Inertia\Inertia;
 
 Route::middleware(['web','auth'])->prefix('my-desk')->group(function () {
     Route::get('/', [FileOverviewController::class, 'index'])->name('overview.my-desk');
-  Route::resource('files', FileController::class);
+   Route::put('files/treat-file/{file}', [FileController::class, 'treat'])->name('files.treat');
+   Route::resource('files', FileController::class);
 
 });
 
