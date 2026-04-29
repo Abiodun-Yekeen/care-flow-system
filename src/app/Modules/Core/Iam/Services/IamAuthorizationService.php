@@ -4,23 +4,24 @@ namespace App\Modules\Core\Iam\Services;
 
 use App\Modules\Core\Iam\Models\Policy;
 use App\Modules\Core\Iam\Models\Resource;
+use App\Modules\Core\Iam\Models\Role;
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Security\Arn;
 use App\Modules\Core\Iam\Security\PolicyEvaluator;
-use App\Modules\Core\Shared\Models\Module;
 use App\Modules\Core\Shared\Services\Cache\CacheManager;
 use App\Modules\Core\Shared\Services\PermissionCompilerService;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class IamAuthorizationService
 {
     private PolicyEvaluator $evaluator;
+    private CacheManager $cache; // Use your custom manager
 
-    public function __construct(PolicyEvaluator $evaluator)
+    public function __construct(PolicyEvaluator $evaluator, CacheManager $cache)
     {
         $this->evaluator = $evaluator;
+        $this->cache = $cache;
     }
     public function authorize($user, $action, $resource = null, array $context = []): bool
     {
@@ -35,27 +36,45 @@ class IamAuthorizationService
 
         // Build full evaluation context ONCE
         $evalContext = array_merge([
-            'user'        => $user,
-            'user_id'     => $user->id,
-            'user.id'     => $user->id,
-            'user_email'  => $user->email,
-            'user.email'  => $user->email,
+            'user'               => $user,
+            'user_id'            => $user->id,
+            'user_email'         => $user->email,
+            'user:department_id' => $user->department_id,
+            'user:role'          => $this->getUserRoleIds($user),
         ], $context);
+
+
+        $policies = $this->getUserPolicies($user);
+
+        // --- TEMPORARY DEBUG START ---
+        if ($action !== 'dashboard.view') { // Avoid spamming the dashboard
+            dump([
+                'Action' => $action,
+                'User_Dept' => $user->department_id,
+                'Context_Sent' => $evalContext,
+                'Policies_Found' => $policies->pluck('name')->toArray(),
+                'First_Policy_Statements' => $policies->first()?->statements,
+            ]);
+        }
+        // --- TEMPORARY DEBUG END ---
+
 
         try {
             // Replace placeholders in REQUEST resource
-            $resource = str_replace(
-                ['${user.id}', '${user_id}'],
-                $user->id,
-                (string) $resource
-            );
+            if (is_string($resource)) {
+                $resource = str_replace(
+                    ['${user.id}', '${user_id}'],
+                    (string) $user->id,
+                    $resource
+                );
+            }
 
             $arn = $this->resolveArn($resource);
 
             //Use evalContext for cache key too
             $cacheKey = $this->getCacheKey($user, $action, $arn, $evalContext);
 
-            return Cache::remember($cacheKey, 3600, function () use ($user, $action, $arn, $evalContext) {
+            return $this->cache->remember($cacheKey, 3600, function () use ($user, $action, $arn, $evalContext) {
 
                 $policies = $this->getUserPolicies($user);
 
@@ -110,17 +129,32 @@ class IamAuthorizationService
     }
     public function getAllowedActions(User $user, $resource, array $context = []): array
     {
+        // Resolve the ARN (This will handle 'arn:cf:office_files:my_desk:*')
         $arn = $this->resolveArn($resource);
-        $resourceKey = $resource instanceof Resource ? $resource->key : (string)$resource;
 
-        $possibleActions = config("iam.actions.{$resourceKey}", ['view', 'create', 'update', 'delete']);
+        // Determine the Resource Key to look up actions in config
+        // If it's an instance (like File-123), we need the base key (my_desk)
+        if ($resource instanceof Resource) {
+            $resourceKey = $resource->key;
+        } elseif (is_string($resource) && str_contains($resource, 'arn:')) {
+            // Extract 'my_desk' from 'arn:cf:office_files:my_desk:file-123'
+            $parts = explode(':', $resource);
+            $resourceKey = $parts[3] ?? (string)$resource;
+        } else {
+            $resourceKey = (string)$resource;
+        }
+
+        // Get the actions from config (e.g., my_desk:ListInTray, etc.)
+        $possibleActions = config("iam.actions.{$resourceKey}");
+
+        // Fallback if config is missing
+        if (empty($possibleActions)) {
+            $possibleActions = array_map(fn($a) => "{$resourceKey}:{$a}", ['view', 'create', 'update']);
+        }
+
         $policies = $this->getUserPolicies($user);
-        \Log::info("IAM Compiler Sync Check for Resource: {$resourceKey}", [
-            'arn' => $arn->toString(),
-            'policy_count' => $policies->count(),
-            'policy_ids' => $policies->pluck('id')->toArray(),
-            'user_id' => $user->id
-        ]);
+
+        //  Evaluate against the specific ARN passed (Wildcard or ID)
         return $this->evaluator->getAllowedActions(
             $policies,
             $possibleActions,
@@ -136,23 +170,42 @@ class IamAuthorizationService
         }
 
         $resourceKey = $instance->getResourceKey();
-        $resource = Resource::where('key', $resourceKey)->firstOrFail();
+
+        // Suggestion: Use cache for Resource lookups to speed up the UI
+        $resource = $this->cache->remember("iam:res_def:{$resourceKey}", 3600, function() use ($resourceKey) {
+            return Resource::where('key', $resourceKey)->first();
+        });
+
+        if (!$resource) {
+            return []; // Resource not registered in IAM, deny everything
+        }
 
         $instanceContext = array_merge($context, [
-            'resource:id' => $instance->id,
-            'resource:owner' => $instance->user_id ?? null,
+            'resource:id'         => $instance->id,
+            'resource:owner'      => $instance->user_id ?? null,
             'resource:department' => $instance->department_id ?? null,
-            'resource:status' => $instance->status ?? null,
+            'resource:status'     => $instance->status ?? null,
+            'resource:type'       => $resourceKey,
         ]);
 
-        return $this->getAllowedActions($user, $resource->arnFor($instance->id), $instanceContext);
+        // Build the specific ARN: arn:cf:office_files:my_desk:file-123
+        $specificArn = $resource->arnFor($instance->id);
+
+        return $this->getAllowedActions($user, $specificArn, $instanceContext);
     }
 
     private function getUserPolicies(User $user): Collection
     {
-        return Cache::remember("user:{$user->id}:policies", 3600, function () use ($user) {
+        return $this->cache->remember("user:{$user->id}:policies", 3600, function () use ($user) {
+            //  Get the Role IDs (This method should fetch from DB, not $user->roles)
             $roleIds = $this->getUserRoleIds($user);
 
+            if (empty($roleIds)) {
+                return collect();
+            }
+
+            // Fetch all policies linked to any of these roles
+            // We use whereHas to perform a clean join in the DB
             return Policy::whereHas('roles', function ($query) use ($roleIds) {
                 $query->whereIn('roles.id', $roleIds);
             })->get();
@@ -161,17 +214,21 @@ class IamAuthorizationService
 
     private function getUserRoleIds(User $user): array
     {
-        //  Get roles directly assigned to user
-        $directRoles = $user->roles()->get();
-        $allRoleIds = [];
+        // allRelatedIds() will now correctly use 'user_roles'
+        $directRoleIds = $user->roles()->allRelatedIds()->toArray();
 
-        foreach ($directRoles as $role) {
-            $allRoleIds[] = $role->id;
+        $allRoleIds = $directRoleIds;
 
-            // Merge in inherited IDs
-            // Make sure your Role model's getAllInheritedRoles() returns an array of IDs
-            $inherited = $role->getAllInheritedRoles();
-            $allRoleIds = array_merge($allRoleIds, $inherited);
+        if (!empty($directRoleIds)) {
+            // Fetch Role models to process inheritance logic
+            $roles = Role::whereIn('id', $directRoleIds)->get();
+
+            foreach ($roles as $role) {
+                // Ensure this method exists on your Role model
+                // and returns an array of IDs
+                $inherited = $role->getAllInheritedRoles();
+                $allRoleIds = array_merge($allRoleIds, $inherited);
+            }
         }
 
         return array_unique($allRoleIds);
@@ -179,6 +236,11 @@ class IamAuthorizationService
 
     private function resolveArn($resource): Arn
     {
+        // 1. Handle Null or Empty immediately to prevent the crash
+        if (!$resource) {
+            return Arn::fromString('arn:cf:::');
+        }
+
         if ($resource instanceof Arn) {
             return $resource;
         }
@@ -187,27 +249,32 @@ class IamAuthorizationService
             return $resource->arn;
         }
 
-        // Use first() instead of firstOrFail() to prevent ModelNotFoundException in tests
         if (is_string($resource)) {
             // Check if it's already an ARN string
             try {
-                $arn = Arn::fromString($resource);
-                if ($arn) return $arn;
+                // Only try parsing if it looks like an ARN
+                if (str_starts_with($resource, 'arn:')) {
+                    $arn = Arn::fromString($resource);
+                    if ($arn) return $arn;
+                }
             } catch (\Exception $e) {}
 
-            // Look up by 'key' or 'name' (Check your migration column name!)
+            // Look up by 'key' or 'name'
             $resourceModel = Resource::where('key', $resource)
                 ->orWhere('name', $resource)
                 ->first();
 
+            // Instead of throwing an exception, log it and return a null ARN
+            // This stops the 500 error and lets the login proceed
             if (!$resourceModel) {
-                throw new \InvalidArgumentException("Resource definition for '{$resource}' not found in database.");
+                Log::debug("IAM: Resource definition for '{$resource}' not found.");
+                return Arn::fromString("arn:cf:unknown:{$resource}:*");
             }
 
             return $resourceModel->arn;
         }
 
-        throw new \InvalidArgumentException('Unable to resolve ARN from resource');
+        return Arn::fromString('arn:cf:::');
     }
 
     private function getCacheKey(User $user, string $action, Arn $arn, array $context): string
@@ -243,32 +310,57 @@ class IamAuthorizationService
 
     public function clearUserCache(User $user): void
     {
-        Cache::forget("user:{$user->id}:policies");
+        $this->cache->forget("user:{$user->id}:policies");
+
+        $this->cache->forget("iam:snapshot:user:{$user->id}");
 
         // Clear all decision caches for this user using Redis SCAN
         $this->clearCachePattern("iam:decision:{$user->id}:*");
+        //Force a rebuild of the snapshot immediately
+       // $this->buildSnapshot($user);
     }
 
     private function clearCachePattern(string $pattern): void
     {
-        $store = Cache::getStore();
+        // Check if our custom manager is currently using Redis
+        if (!$this->cache->isUsingRedis()) {
+            // If Redis is down, we are using the Database store.
+            // Pattern clearing 'database' is harder (requires SQL LIKE),
+            // but since Redis is the primary for performance, we handle it here.
+            return;
+        }
 
-        if ($store instanceof \Illuminate\Cache\RedisStore) {
-            $redis = Cache::getRedis();
+        try {
+            // Get the Redis connection directly via Laravel's facade
+            // (This matches how your manager pings it)
+            $redis = \Illuminate\Support\Facades\Redis::connection();
+            $prefix = config('database.redis.options.prefix', '');
+
+            $fullPattern = $prefix . $pattern;
             $cursor = 0;
 
             do {
-                $result = $redis->scan($cursor, ['MATCH' => $pattern, 'COUNT' => 100]);
+                // SCAN for the keys
+                $result = $redis->scan($cursor, ['MATCH' => $fullPattern, 'COUNT' => 100]);
 
                 if (is_array($result)) {
                     $cursor = $result[0];
                     $keys = $result[1];
 
                     if (!empty($keys)) {
-                        $redis->del($keys);
+                        // We must strip the prefix before passing back to Redis del
+                        // if the client adds it automatically, or just use the raw del.
+                        $strippedKeys = array_map(function($key) use ($prefix) {
+                            return str_replace($prefix, '', $key);
+                        }, $keys);
+
+                        $redis->del($strippedKeys);
                     }
                 }
             } while ($cursor != 0);
+
+        } catch (\Throwable $e) {
+            Log::warning("IAM: Failed to clear Redis pattern: " . $e->getMessage());
         }
     }
 
@@ -398,7 +490,7 @@ class IamAuthorizationService
     public function buildSnapshot(User $user): array
     {
         $permissions = $this->getPermissionMatrix($user);
-          app(CacheManager::class)->put("iam:snapshot:user:{$user->id}", $permissions, 3600);
+          $this->cache->put("iam:snapshot:user:{$user->id}", $permissions, 3600);
 
         return $permissions;
     }

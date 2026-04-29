@@ -25,26 +25,25 @@ class PermissionCompilerService
 
     private function build(User $user): array
     {
-        //  Get all resources once and index them by key for fast lookup
-        $resources = Resource::all()->pluck('key')->toArray();
-
+        $resources = Resource::all();
         $result = [];
 
-        // Pre-load the user's effective policy statements
-        foreach ($resources as $resourceKey) {
-
-            // This is the call that needs to be efficient
+        foreach ($resources as $resource) {
+            // WE MUST PASS CONTEXT HERE
             $actions = $this->iam->getAllowedActions(
                 $user,
-                $resourceKey
+                $resource->key,
+                [
+                    'user:department_id' => $user->department_id,
+                    'user:id'            => $user->id,
+                    'user:role'          => $user->role_name, // Optional but helpful
+                ]
             );
 
             if (!empty($actions)) {
-                // Ensure we return a simple array of action strings
-                $result[$resourceKey] = array_values($actions);
+                $result[$resource->key] = array_values($actions);
             }
         }
-
 
         return $result;
     }

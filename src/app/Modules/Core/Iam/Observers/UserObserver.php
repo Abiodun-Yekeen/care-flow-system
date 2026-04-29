@@ -6,6 +6,7 @@ namespace App\Modules\Core\Iam\Observers;
 
 use App\Modules\Core\Iam\Models\Role;
 use App\Modules\Core\Iam\Models\User;
+use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Shared\Services\Cache\CacheManager;
 
 class UserObserver
@@ -30,5 +31,12 @@ class UserObserver
             $user->flushIamCache();
         }
     }
+    public function saved(User $user)
+    {
+        // This fires for both created and updated
+        app(IamAuthorizationService::class)->clearUserCache($user);
+    }
+
+
 
 }

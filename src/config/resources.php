@@ -97,7 +97,7 @@ return [
             'module_key' => 'office_files',
             'children' => [
                 ['key' => 'current_location', 'label' => 'Find Any File', 'route' => '/tracking/location', 'icon' => 'search'],
-                ['key' => 'processing_delays', 'label' => 'System Bottlenecks', 'route' => '/tracking/delays', 'icon' => 'clock-alert'],
+//                ['key' => 'processing_delays', 'label' => 'System Bottlenecks', 'route' => '/tracking/delays', 'icon' => 'clock-alert'],
             ]
         ],
 
@@ -196,40 +196,7 @@ return [
             'order' => 7,
             'module_key' => 'office_files',
             'actions' => ['view'],
-            'children' => [
-                [
-                    'key' => 'registry_reports',
-                    'label' => 'Registry Reports',
-                    'route' => '/reports/registry',
-                    'icon' => 'clipboard-list',
-                    'order' => 1,
-                    'actions' => ['view', 'export'],
-                ],
-                [
-                    'key' => 'routing_reports',
-                    'label' => 'Routing Reports',
-                    'route' => '/reports/routing',
-                    'icon' => 'git-compare',
-                    'order' => 2,
-                    'actions' => ['view', 'export'],
-                ],
-                [
-                    'key' => 'department_reports',
-                    'label' => 'Department Reports',
-                    'route' => '/reports/departments',
-                    'icon' => 'building',
-                    'order' => 3,
-                    'actions' => ['view', 'export'],
-                ],
-                [
-                    'key' => 'performance_reports',
-                    'label' => 'Performance Reports',
-                    'route' => '/reports/performance',
-                    'icon' => 'activity',
-                    'order' => 4,
-                    'actions' => ['view', 'export'],
-                ],
-            ],
+
         ],
     ],
 

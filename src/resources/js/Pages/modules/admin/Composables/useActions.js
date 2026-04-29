@@ -1,5 +1,5 @@
 import {router} from "@inertiajs/vue3";
-import {DownloadIcon, EyeIcon, PencilIcon, PlusIcon} from "lucide-vue-next";
+import {DownloadIcon, EyeIcon, PencilIcon, PlusIcon, UploadIcon} from "lucide-vue-next";
 import {useNotificationStore} from "@/core/stores/useNotificationStore.js";
 
 export const UserActions = (user = null) => {
@@ -10,7 +10,7 @@ export const UserActions = (user = null) => {
     {
         label: 'New User',
         icon: PlusIcon,
-        permission: { module: 'users', action: 'create' },
+        permission: { module: 'admin', action: 'iam:CreateUser' },
         onClick: () => router.visit(route('users.create')),
     },
     {
@@ -18,7 +18,7 @@ export const UserActions = (user = null) => {
         icon: EyeIcon,
         // Using optional chaining and a conditional check
         hidden: !user,
-        permission: { module: 'users', action: 'view' },
+        permission: { module: 'admin', action: 'iam:GetUserDetails' },
         onClick: () => user
             ? router.visit(route('users.show', user.id))
             : notify.info("Please select exactly one user")
@@ -27,15 +27,15 @@ export const UserActions = (user = null) => {
         label: 'Edit',
         icon: PencilIcon,
         hidden: !user,
-        permission: { module: 'users', action: 'update' },
+        permission: { module: 'admin', action: 'iam:UpdateUser' },
         onClick: () => user
             ? router.visit(route('users.edit', user.id))
             : notify.info("Please select exactly one user")
     },
     {
         label: 'Import User Data',
-        icon: DownloadIcon,
-        permission: { module: 'users', action: 'create' }, // add if exists
+        icon: UploadIcon,
+        permission: { module: 'admin', action: 'iam:CreateUser' },
         onClick: () => router.visit(route('users.import-user-data')),
     },
 ]};

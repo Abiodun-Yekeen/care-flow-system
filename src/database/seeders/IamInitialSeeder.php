@@ -54,97 +54,190 @@ class IamInitialSeeder extends Seeder
                 }
             }
         });
-        /*
-        |--------------------------------------------------------------------------
-        | 2. DEFINE POLICIES
-        |--------------------------------------------------------------------------
-        */
-
-        // BASIC ACCESS (Everyone gets Dashboard)
+        // BASIC ACCESS (Everyone gets Dashboard and their own Profile)
         $basicUserPolicy = $builder->new()
-            ->statement('dashboard-access')
+            ->statement('dashboard-view')
             ->allow()
-            ->action(['view'])
+            ->action(['dashboard:ViewOverview'])
             ->resource(['arn:cf:dashboard:dashboard:*'])
             ->end()
-            ->statement('profile-access')
+
+            ->statement('self-profile-access')
             ->allow()
-            ->action(['view', 'update'])
-            ->resource(["arn:cf:organization:users:\${user_id}"])
+            ->action(['iam:GetUserDetails', 'iam:UpdateUser'])
+            // This ARN is dynamic! Users can only see/edit their own ID.
+            ->resource(["arn:cf:iam:users:user-\${user:id}"])
             ->end()
-            ->create('BasicUserPolicy', 'Core system access for all staff');
-        // REGISTRY (Intake + Tracking visibility)
-        $registryPolicy = $builder->new()
-            ->statement('intake')
-            ->allow()->action(['view','view_dept', 'create', 'submit', 'upload'])
-            ->resource([
-                'arn:cf:office_files:registry:*',
-                'arn:cf:office_files:temporary_files:*',
-                "arn:cf:office_files:receive_register:*",
-            ])
-            ->end()
-            ->statement('registry-tracking')
-            ->allow()->action(['view','view_dept_history', 'search_dept'])
-            ->resource([
-                'arn:cf:office_files:tracking:*',
-                "arn:cf:office_files:current_location:*",
-            ]) // Can check movement for people
-            ->end()->create('RegistryPolicy', 'Registry operations and departmental tracking');
 
-        // STAFF (Work Desk + File Processing)
+            ->statement('org-directory-view')
+            ->allow()
+            ->action(['org:ListStaff', 'org:GetStaffDetails'])
+            ->resource(['arn:cf:org:staff:*'])
+            ->end()
+
+            ->create('BasicUserPolicy', 'Core system access: Dashboard, Directory, and Self-Management');
+        /*
+ |--------------------------------------------------------------------------
+ | STAFF POLICY (Department-Bound)
+ |--------------------------------------------------------------------------
+ */
         $staffPolicy = $builder->new()
-            ->statement('work-desk')
-            ->allow()->action(['view'])
-            ->resource(['arn:cf:office_files:my_desk:*']) // Needed to see the in-tray
+            ->statement('work-desk-access')
+            ->allow()
+            ->action(['my_desk:ListInTray', 'my_desk:ViewAssignedFiles'])
+            ->resource(['arn:cf:office_files:my_desk:*'])
+            // This condition ensures the evaluator checks the ID
+            ->condition('NumericEquals', ['resource:department' => '${user:department_id}'])
             ->end()
-            ->statement('file-processing')
-            ->allow()->action(['view_assigned', 'treat', 'attach_document'])
-            ->resource(['arn:cf:office_files:files:*', 'arn:cf:office_files:documents:*'])
-            ->end()
-            ->statement('route')
-            ->allow()->action(['route_to_hod'])
-            ->resource(['arn:cf:office_files:routing:*'])
-            ->end()->create('StaffPolicy', 'Operational processing for assigned files');
 
-        // HOD
+            ->statement('internal-routing')
+            ->allow()
+            ->action(['files:RouteToHod', 'files:TreatFile'])
+            ->resource(['arn:cf:office_files:files:*'])
+            ->condition('NumericEquals', ['resource:department' => '${user:department_id}'])
+            ->end()
+
+            ->statement('file-processing')
+            ->allow()
+            ->action(['office_files:TreatFile', 'office_files:AttachDocument'])
+            ->resource(['arn:cf:office_files:files:*'])
+            ->condition('NumericEquals', ['resource:department' => '${user:department_id}'])
+            ->end()
+
+            ->create('StaffPolicy', 'Operational processing for files within the user\'s department');
+
+        /*
+        |--------------------------------------------------------------------------
+        | HOD POLICY (Full Departmental Oversight)
+        |--------------------------------------------------------------------------
+        */
         $hodPolicy = $builder->new()
-            ->statement('control')
-            ->allow()->action(['view_dept', 'treat', 'close', 'merge_file', 'request_external'])
-            ->resource(['arn:cf:office_files:*', 'arn:cf:office_files:my_desk:*'])
-            ->end()->create('HodPolicy', 'Departmental head management');
+            ->statement('departmental-control')
+            ->allow()
+            ->action([
+                'office_files:ListRegistry',
+                'office_files:ViewDeptHistory',
+                'office_files:TreatFile',
+                'office_files:CloseFile'
+            ])
+            ->resource(['arn:cf:office_files:*:*'])
+            // HODs can do anything, but ONLY within their department
+            ->condition('NumericEquals', ['resource:department' => '${user:department_id}'])
+            ->end()
+            ->statement('external-routing')
+            ->allow()
+            ->action(['files:RouteToDept', 'files:RequestFile'])
+            ->resource(['arn:cf:office_files:files:*','arn:cf:office_files:my_desk:*'])
+            ->end()
+            ->create('HodPolicy', 'Management oversight restricted to the HOD\'s department');
+
+        /*
+        |--------------------------------------------------------------------------
+        | REGISTRY POLICY (Departmental Intake)
+        |--------------------------------------------------------------------------
+        */
+        $registryPolicy = $builder->new()
+            ->statement('registry-intake')
+            ->allow()
+            ->action(['registry:ListIncoming', 'registry:RegisterFile', 'registry:SubmitToWorkflow','registry:UpdateTempFile'])
+            ->resource(['arn:cf:office_files:registry:*'])
+            // If your registry is shared, remove the condition.
+            // If each dept has its own registry, keep it:
+            ->condition('NumericEquals', ['resource:department' => '${user:department_id}'])
+            ->end()
+            ->create('RegistryPolicy', 'Registry operations for the department');
 
         // DMS / DIRECTOR (Global Power + Work Desk)
         $dmsPolicy = $builder->new()
             ->statement('desk-access')
-            ->allow()->action(['view'])
+            ->allow()
+            ->action(['my_desk:ListInTray', 'my_desk:ViewAssignedFiles'])
             ->resource(['arn:cf:office_files:my_desk:*'])
             ->end()
-            ->statement('executive-power')
-            ->allow()->action([
-                'view_all',
-                'merge_file',
-                'reopen_file',
-                'convert_temp',
-                'open_permanent_file',
-                'reactivate_file'
+
+            ->statement('executive-oversight')
+            ->allow()
+            ->action([
+                'office_files:ListRegistry',   // See all registries
+                'office_files:GetFileDetails', // Open any file
+                'office_files:ViewAllHistory', // See full movement logs
+                'office_files:ReopenFile',     // Executive power
+                'office_files:MergeFiles'
             ])
-            ->resource(['arn:cf:office_files:files:*'])
-            ->end()->create('DmsPolicy', 'High-level DMS oversight and file reactivation');
+            // Note: No 'NumericEquals' condition here if they need to see files
+            // from ALL departments. If restricted to their branch, add the condition.
+            ->resource(['arn:cf:office_files:*'])
+            ->end()
 
-        // SYSTEM ADMIN
-        $systemAdminPolicy = $builder->new()
-            ->statement('manage-system')
-            ->allow()->action(['*'])
-            ->resource(['arn:cf:admin:*', 'arn:cf:org:*'])
-            ->end()->create('SystemAdminPolicy', 'Technical management');
-
-        // AUDITOR
+            ->create('DmsPolicy', 'High-level executive oversight and cross-departmental tracking');
+        // AUDITOR (Read-Only Global Access)
         $auditorPolicy = $builder->new()
-            ->statement('oversight')
-            ->allow()->action(['view_all', 'export_all', 'view_all_history'])
-            ->resource(['arn:cf:office_files:*', 'arn:cf:admin:audit_logs:*'])
-            ->end()->create('AuditorPolicy', 'Read-only audit access');
+            ->statement('global-read-only')
+            ->allow()
+            ->action([
+                'registry:ListIncoming',
+                'my_desk:ListInTray',
+                'office_files:ListRegistry',
+                'office_files:GetFileDetails',
+                'iam:ListUsers',
+                'iam:ViewAuditLogs',
+                'reports:ViewPerformanceStats'
+            ])
+            ->resource(['*']) // Auditors can see everything
+            ->end()
 
+            ->statement('prevent-modification')
+            ->deny()
+            ->action(['*:Create*', '*:Update*', '*:Delete*', '*:Treat*'])
+            ->resource(['*'])
+            ->end()
+            ->create('AuditorPolicy', 'Total read-only access for compliance and audit');
+
+        // SYSTEM ADMIN (Infrastructure & User Management)
+        $systemAdminPolicy = $builder->new()
+            ->statement('manage-iam')
+            ->allow()
+            ->action([
+                'iam:ListUsers',
+                'iam:GetUserDetails',
+                'iam:CreateUser',
+                'iam:UpdateUser',
+                'iam:DeleteUser',
+                'iam:ListRoles',
+                'iam:ManageRoles',
+                'iam:ListPolicies',
+                'iam:ManagePolicies',
+                'iam:AttachPolicy'
+            ])
+            ->resource([
+                'arn:cf:iam:users:*',
+                'arn:cf:iam:roles:*',
+                'arn:cf:iam:policies:*'
+            ])
+            ->end()
+
+            ->statement('system-configuration')
+            ->allow()
+            ->action([
+                'iam:ManageModules',
+                'iam:UpdateSystemSettings',
+                'iam:ViewAuditLogs'
+            ])
+            ->resource(['arn:cf:iam:settings:*', 'arn:cf:iam:modules:*'])
+            ->end()
+
+            ->statement('org-management')
+            ->allow()
+            ->action([
+                'org:ListDepartments',
+                'org:CreateDepartment',
+                'org:UpdateDepartment',
+                'org:ManageStaff'
+            ])
+            ->resource(['arn:cf:org:*'])
+            ->end()
+
+            ->create('SystemAdminPolicy', 'Technical management of users, roles, and system settings');
         $superAdminPolicy = $builder->new()
             ->statement('root')
             ->allow()

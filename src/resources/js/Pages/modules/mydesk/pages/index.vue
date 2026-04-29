@@ -13,8 +13,6 @@ import LoadButton from "@/Components/ui/LoadButton.vue";
 import FormTextarea from "@/Components/forms/FormTextarea.vue";
 
 
-
-
 const props = defineProps({
     files: Object,
     filters: Object
@@ -70,16 +68,23 @@ const changePage = (url) => {
     }
 };
 
+const isNew = (dateString) => {
+    if (!dateString) return false;
+    const receivedDate = new Date(dateString);
+    const today = new Date();
+    // Consider it "new" if received within the last 24 hours
+    const diffTime = Math.abs(today - receivedDate);
+    const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+    return diffHours <= 24;
+};
   const submit_treat_file = () => {
-    // 1. Safety Check: Ensure a file is actually selected
+    // Check: Ensure a file is actually selected
     if (!selectedFile.value) {
         alert("Please select a file first");
         return;
     }
 
     form.clearErrors();
-
-    // 2. Use selectedFile.value.id (or .uuid if that's what your route uses)
     form.put(route('files.treat', { file: selectedFile.value.uuid }), {
         preserveScroll: true,
         onSuccess: () => {
@@ -117,14 +122,42 @@ const changePage = (url) => {
                     <div class="flex-1 overflow-y-auto custom-scrollbar">
                         <div v-for="file in filteredFiles" :key="file.id"
                              @click="selectedFile = file"
-                             :class="['p-4 border-b cursor-pointer transition-all relative group', selectedFile?.id === file.id ? 'bg-blue-50/50' : 'hover:bg-gray-50']">
-                            <div v-if="selectedFile?.id === file.id" class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"></div>
-                            <div class="flex justify-between items-start mb-1">
-                                <span class="text-[9px] font-mono font-bold text-gray-400 uppercase">{{ file.file_number }}</span>
-                                <Clock :size="10" class="text-gray-300" />
+                             :class="[
+        'p-4 border-b cursor-pointer transition-all relative group',
+        // 1. Background Logic: Blue if selected, Amber if new/pending, else white
+        selectedFile?.id === file.id
+            ? 'bg-blue-50/50'
+            : (file.status === 'pending' || isNew(file.date_received) ? 'bg-amber-50/40' : 'hover:bg-gray-50')
+     ]">
+
+                            <div v-if="selectedFile?.id === file.id"
+                                 class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 z-10">
                             </div>
-                            <h4 class="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">{{ file.source_name }}</h4>
-                            <p class="text-[10px] text-gray-500 truncate mt-1">{{ file.date_received }}</p>
+
+                            <div v-else-if="file.status === 'pending' || isNew(file.date_received)"
+                                 class="absolute left-0 top-0 bottom-0 w-1 bg-amber-400">
+                            </div>
+
+                            <div v-if="file.status === 'pending'" class="absolute top-3 right-3 flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                            </div>
+
+                            <div class="flex justify-between items-start mb-1">
+                            <span class="text-[9px] font-mono font-bold text-gray-400 uppercase">
+                                {{ file.file_number }}
+                            </span>
+                                <Clock :size="10" :class="file.status === 'pending' ? 'text-amber-500' : 'text-gray-300'" />
+                            </div>
+
+                            <h4 class="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">
+                                {{ file.source_name }}
+                            </h4>
+
+                            <div class="flex items-center justify-between mt-1">
+                                <p class="text-[10px] text-gray-500 truncate">{{ file.date_received }}</p>
+                                <span v-if="file.status === 'pending'" class="text-[8px] font-black text-amber-600 uppercase">New</span>
+                            </div>
                         </div>
                     </div>
 
@@ -170,7 +203,7 @@ const changePage = (url) => {
                                     <div class="flex justify-between border-b pb-1"><span class="text-slate-500">Current Holder:</span> <span class="font-medium">{{ selectedFile.current_holder }}</span></div>
                                     <div class="flex justify-between border-b pb-1"><span class="text-slate-500">Created By:</span> <span class="font-medium capitalize">{{ selectedFile.creator_name }}</span></div>
                                     <div class="flex justify-between pb-1">
-                                        <span class="text-slate-500">Deadline:</span> 
+                                        <span class="text-slate-500">Deadline:</span>
                                         <span :class="['font-medium', isPast(selectedFile.deadline) ? 'text-red-600' : 'text-gray-700']">
                                             {{ selectedFile.deadline }}
                                         </span>
@@ -223,7 +256,7 @@ const changePage = (url) => {
                 </div>
             </div>
 
-              
+
 
                 <div class="w-96 flex flex-col bg-white rounded-xl shadow-sm border overflow-hidden">
                     <div class="flex border-b bg-gray-50/50">
@@ -252,7 +285,7 @@ const changePage = (url) => {
 
 
                                 <div class="mt-6 pt-6 border-t">
-                                    
+
                                 <div class="col-span-12 md:col-span-6">
                                     <FormTextarea
                                         id="minute"
@@ -321,7 +354,7 @@ const changePage = (url) => {
                         </div>
                     </div>
                 </Teleport>
-                
+
     </ContextModuleLayout>
 </template>
 

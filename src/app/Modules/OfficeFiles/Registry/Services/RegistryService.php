@@ -110,17 +110,11 @@ class RegistryService
                 $hod = $this->userRepository->findById($hodUserId);
                 if ($hod) {
                   $this->notifyUser($user,$file,$hod);
-                    event(new FileSent($file, $hodUserId));
-                  // Push Notification
-//                    SendFcmNotification::dispatch(
-//                        $user,
-//                        "New File",
-//                        "New file received: {$file->subject}",
-//                        [
-//                            'file_id' => $file->id,
-//                            'action_type' => 'new_submission'
-//                        ]
-//                    );
+                    // Ensure the event only fires AFTER the database transaction is saved
+                    DB::afterCommit(function () use ($file, $hodUserId) {
+                        event(new FileSent($file, $hodUserId));
+                    });
+
                 }
             }
 
@@ -226,7 +220,7 @@ class RegistryService
             ]);
 
             $file->movements()->update([
-             
+
                 'acted_by_user_id' => auth()->id,
                 'movement_type' => 'submitted_to_hod',
                 'movement_status' => 'pending',
@@ -264,13 +258,19 @@ class RegistryService
     {
          $hod->notify(new FileSubmittedToHOD($file,'new_submission'));
 
-        foreach ($user->fcmTokens as $token) {
+        foreach ($hod->fcmTokens as $token) {
             app(FcmService::class)->send(
                 $token->token,
-                "Test Notification",
-                "This is a test push",
-                ['test' => true]
+                "New File Received",
+                "File #{$file->id} requires your attention.",
+                [
+                    'title' => "New File Received",
+                    'body'  => "File #{$file->id} requires your attention.",
+                    'type'  => 'new_submission',
+                    'url'   => '/dashboard/registry',
+                    'file_id' => $file->id
+                ]
             );
-        }
+            }
     }
 }

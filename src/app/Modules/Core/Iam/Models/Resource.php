@@ -45,7 +45,23 @@ class Resource extends Model
 
     public function getAvailableActions(): array
     {
-        return config("iam.actions.{$this->key}", ['view', 'create', 'update', 'delete']);
+        //  fetch the specific actions from the config using the resource key
+        $actions = config("iam.actions.{$this->key}");
+
+        // If the config exists, return it exactly as defined (since you already included prefixes)
+        if (!empty($actions)) {
+            return $actions;
+        }
+
+        // FALLBACK: If the key isn't in config, generate standard ones using the key as service
+        // This handles modules you haven't explicitly defined yet.
+        return [
+            "{$this->key}:List",
+            "{$this->key}:Get",
+            "{$this->key}:Create",
+            "{$this->key}:Update",
+            "{$this->key}:Delete",
+        ];
     }
 
     public function parent()

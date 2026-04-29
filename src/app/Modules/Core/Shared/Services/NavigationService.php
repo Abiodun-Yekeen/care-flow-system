@@ -5,62 +5,62 @@ namespace App\Modules\Core\Shared\Services;
 use App\Modules\Core\Iam\Models\Resource;
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Services\IamAuthorizationService;
-use App\Modules\Core\Shared\Models\Module;
-use App\Modules\Core\Shared\Repository\Contracts\ModuleRepositoryInterface;
 use App\Modules\Core\Shared\Services\Cache\CacheManager;
-use Illuminate\Support\Facades\Cache;
-use phpDocumentor\Reflection\Types\Collection;
 
 class NavigationService
 {
     public function __construct(
         private CacheManager $cache,
-        private PermissionCompilerService $CompilerService,
+        private IamAuthorizationService $iamService,
     ) {}
+
     public function sidebar(User $user): array
     {
+        // 1. Get snapshot from cache or compile it
+        $snapshot = $this->cache->get("iam:snapshot:user:{$user->id}");
 
-        $snapshot = $this->cache->get("iam:snapshot:user:{$user->id}") ?? [];
-
-        if (!$snapshot) {
-            $snapshot = $this->CompilerService->compile($user);
+        if (empty($snapshot)) {
+            $snapshot = $this->iamService->buildSnapshot($user);
         }
 
+        // Fetch Top-Level Menu Items
         return Resource::whereNull('parent_id')
             ->where('is_active', true)
             ->orderBy('order')
             ->get()
-            ->filter(function ($r) use ($snapshot) {
-                $userPerms = $snapshot[$r->key] ?? [];
+            ->filter(function ($r) use ($snapshot, $user) {
+                // Super Admin sees everything
+                if ($user->id === 1) return true;
 
-                // Return true if they have 'view' OR if they have ANY other permission
-                return in_array('view', $userPerms) || !empty($userPerms);
+                // Others see if they have ANY permission for this key
+                return !empty($snapshot[$r->key]);
             })
             ->map(fn ($r) => [
-                'key' => $r->key,
-                'label' => $r->name,
-                'route' => $r->route,
-                'icon' => $r->icon,
-                'children' => $this->children($snapshot, $r)
+                'key'      => $r->key,
+                'label'    => $r->name,
+                'route'    => $r->route ?? '#', // Ensure route isn't null for frontend
+                'icon'     => $r->icon,
+                'children' => $this->children($snapshot, $r, $user)
             ])
             ->values()
-           ->toArray();
+            ->toArray();
     }
 
-    private function children($snapshot, $parent)
+    private function children(array $snapshot, Resource $parent, User $user): array
     {
-        return $parent->children() // or however you access the relationship
-        ->where('is_active', true)
+        return $parent->children()
+            ->where('is_active', true)
+            ->orderBy('order')
             ->get()
-            ->filter(function ($child) use ($snapshot) {
-                $childPerms = $snapshot[$child->key] ?? [];
-                return in_array('view', $childPerms) || !empty($childPerms);
+            ->filter(function ($child) use ($snapshot, $user) {
+                if ($user->id === 1) return true;
+                return !empty($snapshot[$child->key]);
             })
             ->map(fn ($child) => [
-                'key' => $child->key,
+                'key'   => $child->key,
                 'label' => $child->name,
-                'route' => $child->route,
-                'icon' => $child->icon,
+                'route' => $child->route ?? '#',
+                'icon'  => $child->icon,
             ])
             ->values()
             ->toArray();
@@ -70,6 +70,7 @@ class NavigationService
     {
         $segments = request()->segments();
 
+        // Cached map for performance
         $map = $this->cache->remember('iam:breadcrumb:map', 86400, function () {
             return Resource::query()
                 ->select('key', 'name as label')
@@ -78,18 +79,13 @@ class NavigationService
         });
 
         $breadcrumb = [];
-        $accumulated = '';
-
         if (empty($segments) || $segments[0] !== 'dashboard') {
-            $breadcrumb[] = [
-                'label' => 'Dashboard',
-                'route' => '/dashboard',
-            ];
+            $breadcrumb[] = ['label' => 'Dashboard', 'route' => '/dashboard'];
         }
 
+        $accumulated = '';
         foreach ($segments as $segment) {
             $accumulated .= '/' . $segment;
-
             if (isset($map[$segment])) {
                 $breadcrumb[] = [
                     'label' => $map[$segment]->label,
@@ -101,4 +97,3 @@ class NavigationService
         return $breadcrumb;
     }
 }
-//app(CacheManager::class)->forget("nav:roles:{$roleSignature}");

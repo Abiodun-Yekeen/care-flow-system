@@ -5,8 +5,8 @@ namespace App\Modules\OfficeFiles\File\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Modules\OfficeFiles\File\Models\File;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use DB;
 
 class FileController
 {
@@ -70,26 +70,26 @@ class FileController
    public function treat(Request $request, File $file)
 {
     DB::transaction(function () use ($request, $file) {
-        
+
         // Update the Main File to a final state
         $file->update([
             'status' => 'treated',
             // Set current holder to null because it's no longer "pending" with anyone
-            'current_holder_user_id' => null, 
+            'current_holder_user_id' => null,
         ]);
 
         //  Create the Final Movement Record (The Archive Entry)
         $file->movements()->create([
             'from_department_id'  => auth()->user()->department_id,
             'from_user_id'        => auth()->id(),
-            
+
             // NO TARGET: This signifies the file has been finalized
-            'to_department_id'    => null, 
-            'to_user_id'          => null, 
+            'to_department_id'    => null,
+            'to_user_id'          => null,
             'acted_by_user_id'    => auth()->id(),
             'received_by_user_id' => auth()->id(), // Mark as received by self to close loop
-            'movement_type'       => 'treated', 
-            'movement_status'     => 'finalized', 
+            'movement_type'       => 'treated',
+            'movement_status'     => 'finalized',
             'remarks'             => $request->remark,
             'minute'              => $request->minute,
             'acted_at'            => now(),

@@ -9,6 +9,7 @@ use App\Modules\Core\Iam\Repository\Eloquent\UserRepository;
 use App\Modules\Core\Iam\Security\PolicyEvaluator;
 use App\Modules\Core\Iam\Services\IamAuthorizationService;
 use App\Modules\Core\Iam\Services\PolicyBuilderService;
+use App\Modules\Core\Shared\Services\Cache\CacheManager;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -21,7 +22,7 @@ class IamAuthorizationProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(IamAuthorizationService::class, function ($app) {
-            return new IamAuthorizationService($app->make(PolicyEvaluator::class));
+            return new IamAuthorizationService($app->make(PolicyEvaluator::class),$app->make(CacheManager::class));
         });
 
         $this->app->singleton(PolicyBuilderService::class, function ($app) {

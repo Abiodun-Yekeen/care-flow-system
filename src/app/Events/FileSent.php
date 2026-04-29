@@ -15,16 +15,20 @@ class FileSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $file;
-    public $userId;
+    public function __construct(
+        public $file,
+        public $userId
+    ) {}
 
-    public function __construct(File $file, $userId) {
-        $this->file = $file;
-        $this->userId = $userId;
+    public function broadcastOn(): array
+    {
+        // Keep it simple
+        return [new PrivateChannel("user.{$this->userId}")];
     }
 
-    public function broadcastOn() {
-        return new PrivateChannel('App.Modules.Core.Iam.Models.User.' . $this->userId);
+    public function broadcastAs(): string
+    {
+        return 'file.sent';
     }
 
 

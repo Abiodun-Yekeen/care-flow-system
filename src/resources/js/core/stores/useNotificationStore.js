@@ -2,7 +2,7 @@ import { defineStore } from "pinia"
 import notificationSound from '@/assests/notification.mp3';
 import { onMessage } from "firebase/messaging";
 import { messaging } from "@/firebase";
-import {router} from "@inertiajs/vue3";
+import {router, usePage} from "@inertiajs/vue3";
 export const useNotificationStore = defineStore("notification", {
     state: () => ({
         // The active banner notification
@@ -128,6 +128,9 @@ export const useNotificationStore = defineStore("notification", {
                 else if (data.priority === 'urgent') {
                     this.warning(fullMessage);
                 }
+                else if (data.priority === 'normal') {
+                    this.success(fullMessage);
+                }
                 else {
                     data.action_type === 'file_returned'
                         ? this.warning(fullMessage)
@@ -148,7 +151,7 @@ export const useNotificationStore = defineStore("notification", {
         listenForNotifications(userId) {
             if (!userId) return;
 
-            const userChannel = window.Echo.private(`App.Modules.Core.Iam.Models.User.${userId}`);
+            const userChannel = window.Echo.private(`user.${userId}`);
 
             // Existing Notification Listener
             userChannel.notification((notification) => {
@@ -156,7 +159,11 @@ export const useNotificationStore = defineStore("notification", {
             });
 
             // Silent File Refresh
-            userChannel.listen('.FileSent', (e) => {
+            userChannel.listen('.file.sent', (e) => {
+                const page = usePage();
+                // if (e.file && page.props.files?.data) {
+                //     page.props.files.data.unshift(e.file);
+                // }
                 // This only fetches the 'files' data from the server
                 router.reload({
                     only: ['files'],

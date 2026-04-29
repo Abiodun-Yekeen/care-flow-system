@@ -163,4 +163,20 @@ class CacheManager
 
         return true;
     }
+
+    /**
+     * Get the underlying store implementation
+     */
+    public function getStoreInstance()
+    {
+        return $this->store()->getStore();
+    }
+
+    /**
+     * Check specifically if we are currently using Redis
+     */
+    public function isUsingRedis(): bool
+    {
+        return $this->redisAvailable();
+    }
 }

@@ -72,10 +72,6 @@ class User extends Authenticatable
     {
          $this->roles()->syncWithoutDetaching($role);
 
-        app(IamAuthorizationService::class)
-            ->forgetUserSnapshot($this->id);
-
-
     }
 
     public function roles()
@@ -85,7 +81,13 @@ class User extends Authenticatable
 
     public function getRoleNameAttribute()
     {
-        return $this->roles->first()?->display_name ?? 'Staff';
+        if ($this->roles->isEmpty()) {
+            return 'Guest';
+        }
+        // Prioritize specialized roles over the 'user' role
+        $role = $this->roles->first(fn($r) => $r->name !== 'user') ?? $this->roles->first();
+
+        return $role->display_name;
     }
     public function files()
     {
@@ -131,9 +133,13 @@ class User extends Authenticatable
     // In User.php model
     public function flushIamCache()
     {
-        app(CacheManager::class)->forget("iam:snapshot:user:{$this->id}");
+        app(IamAuthorizationService::class)->clearUserCache($this);
     }
 
+    public function receivesBroadcastNotificationsOn(): string
+    {
+        return 'user.'.$this->id;
+    }
 
 
     protected static function newFactory()

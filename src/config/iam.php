@@ -23,69 +23,80 @@ return [
 
     'actions' => [
 
-        'dashboard' => ['view'],
+        'dashboard' => [
+            'dashboard:ViewOverview',
+        ],
 
         'registry' => [
-            'view',
-            'view_dept',
-            'create',
-            'submit',
-            'upload'
-        ],
-
-        'temporary_files' => [
-            'view',
-            'view_dept',
-            'create',
-            'submit',
-            'upload'
-        ],
-
-        'tracking' => [
-            'view',
-            'view_dept_history',
-            'search_dept'
+            'registry:ListIncoming',      // View the registry list
+            'registry:GetFileDetails',    // View specific file details
+            'registry:RegisterFile',      // Create/Register new file
+            'registry:SubmitToWorkflow',  // Push to next stage
+            'registry:UploadEvidence',    // Attach scans
+            'registry:UpdateTempFile',    // Manage temporary records
         ],
 
         'my_desk' => [
-            'view'
+            'my_desk:ListInTray',         // Show 'My Desk' menu
+            'my_desk:ViewAssignedFiles',  // Access files sent to user
+            'my_desk:ViewPersonalHistory',// Access user's own movement logs
+            'my_desk:ListDocuments',      // View personal document vault
+            'my_desk:DownloadDocument',
         ],
 
+        'tracking' => [
+            'tracking:SearchGlobal',      // Find any file in the system
+            'tracking:ViewBottlenecks',    // View system delay reports
+            'tracking:ViewDeptHistory',    // View history for whole dept
+        ],
         'files' => [
-            'view',
-            'view_assigned',
-            'treat',
-            'attach_document'
+            'files:TreatFile',            // Minute/Approve/Comment
+            'files:AttachDocument',       // Add documents to file
+            'files:RouteToHod',           // Internal: Send to own HOD
+            'files:RouteToDept',          // External: Send to another Department
+            'files:RequestFile',          // Pull/Request a file from another Dept/Registry
+            'files:MergeFiles',           // Administrative merging
+            'files:CloseFile',            // Mark as completed
+        ], 
+
+        'org' => [
+            'org:ListDepartments',
+            'org:GetDepartmentDetails',
+            'org:CreateDepartment',
+            'org:UpdateDepartment',
+            'org:ListStaff',
+            'org:GetStaffDetails',
+            'org:CreateStaff',
+            'org:UpdateStaff',
         ],
 
-        'documents' => [
-            'view',
-            'attach'
+        'admin' => [
+            // User Management
+            'iam:ListUsers',
+            'iam:GetUserDetails',
+            'iam:CreateUser',
+            'iam:UpdateUser',
+            'iam:DeleteUser',
+
+            // Access Control
+            'iam:ListRoles',
+            'iam:ManageRoles',             // Create/Update/Delete roles
+            'iam:ListPolicies',
+            'iam:ManagePolicies',          // Create/Update/Delete policies
+            'iam:AttachPolicy',            // Bind policy to role/user
+
+            // System Config
+            'iam:ManageModules',           // Enable/Disable modules
+            'iam:ViewAuditLogs',
+            'iam:ExportAuditLogs',
+            'iam:UpdateSystemSettings',
         ],
 
-        'routing' => [
-            'route_to_hod'
+        'reports' => [
+            'reports:ViewRegistryStats',
+            'reports:ViewRoutingStats',
+            'reports:ViewPerformanceStats',
+            'reports:ExportReportData',
         ],
-
-     'admin' => [
-        'view',
-        'create',
-        'update',
-        'delete',
-        'attach'
     ],
-
-
-        'users' => ['view', 'create', 'update', 'delete'],
-        'roles' => ['view', 'create', 'update', 'delete', 'attach'],
-        'policies' => ['view', 'create', 'update', 'delete'],
-    ],
-
-    'audit' => [
-        'enabled' => env('IAM_AUDIT_ENABLED', true),
-        'log_denials' => env('IAM_LOG_DENIALS', true),
-        'log_allows' => env('IAM_LOG_ALLOWS', false),
-        'channel' => env('IAM_AUDIT_CHANNEL', 'stack'),
-    ],
-
 ];

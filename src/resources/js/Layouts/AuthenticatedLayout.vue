@@ -13,7 +13,6 @@ const page = usePage();
 const notify = useNotificationStore();
 const ui = useUiStore();
 
-console.log(page.props)
 const emit = defineEmits(['toggleSidebar'])
 
 onMounted(() => {

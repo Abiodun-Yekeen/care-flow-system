@@ -31,7 +31,7 @@ export const RegistryActions = (uuid = null) => {
         label: 'Edit',
         icon: PencilIcon,
         hidden: !uuid,
-        permission: { module: 'registry', action: 'update' },
+        permission: { module: 'temporary_files', action: 'registry:UpdateTempFile' },
         onClick: () => uuid
             ? router.visit(route('register.edit', uuid))
             : notify.info("Please select exactly one user")

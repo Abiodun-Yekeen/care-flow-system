@@ -47,7 +47,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
         $user = auth()->user();
-        app(PermissionCompilerService::class)->compile($user);
+        app(IamAuthorizationService::class)->buildSnapshot($user);
 //
 
 

@@ -82,6 +82,7 @@ services:
     container_name: care-flow-nginx
     ports:
       - "80:80"
+      - "8085:80"
     volumes:
       - ./src:/var/www # Mount the public folder directly
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro

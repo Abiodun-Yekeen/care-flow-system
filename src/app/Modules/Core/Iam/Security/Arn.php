@@ -115,13 +115,12 @@ class Arn
         );
     }
 
-
     public static function build(
         string $service,
         string $resource,
-        string $partition = null,
-        string $region = null,
-        string $account = null
+        ?string $partition = null, // Added ?
+        ?string $region = null,    // Added ?
+        ?string $account = null    // Added ?
     ): self {
         return new self(
             $partition ?? config('iam.partition', 'cf'),
