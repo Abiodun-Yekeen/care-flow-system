@@ -16,6 +16,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Copy credentials
+        run: |
+          echo "${{ secrets.FIREBASE_CREDENTIALS }}" > src/storage/app/careflow-83b22-firebase-adminsdk-fbsvc-f9c4d19efd.json
       - name: Build App
         uses: docker/build-push-action@v5
         with:
