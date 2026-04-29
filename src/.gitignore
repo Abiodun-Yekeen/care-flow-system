@@ -16,6 +16,7 @@
 
 /public/hot
 /public/storage
+!/storage/app/careflow-83b22-firebase-adminsdk-fbsvc-f9c4d19efd.json
 /storage/*.key
 /storage/pail
 /vendor
