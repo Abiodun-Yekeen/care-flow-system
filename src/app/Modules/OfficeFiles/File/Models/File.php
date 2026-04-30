@@ -4,12 +4,15 @@ namespace App\Modules\OfficeFiles\File\Models;
 
 use App\Modules\Core\Iam\Models\User;
 use App\Modules\OfficeFiles\Document\Models\Document;
+use App\Modules\OfficeFiles\Movement\Models\FileAssignment;
 use App\Modules\OfficeFiles\Movement\Models\FileMovement;
 use App\Modules\OfficeFiles\Registry\Models\FileReceive;
 use App\Modules\OfficeFiles\Routing\Models\FileOpening;
 use App\Modules\OfficeFiles\Routing\Models\FileTransfer;
 use App\Modules\Organization\Department\Models\Department;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class File extends Model
 {
@@ -50,11 +53,6 @@ class File extends Model
     public function currentDepartment()
     {
         return $this->belongsTo(Department::class, 'current_department_id');
-    }
-
-    public function currentHolder()
-    {
-        return $this->belongsTo(User::class, 'current_holder_user_id');
     }
 
     public function creator()
@@ -98,6 +96,29 @@ class File extends Model
         return $this->hasMany(FileReceive::class);
     }
 
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(FileAssignment::class);
+    }
+
+    public function currentAssignment(): HasOne
+    {
+        return $this->hasOne(FileAssignment::class)
+            ->where('status', 'active')
+            ->latestOfMany();
+    }
+    public function currentHolder()
+    {
+        // This goes through the assignment to get the User model
+        return $this->hasOneThrough(
+            User::class,
+            FileAssignment::class,
+            'file_id',
+            'id',
+            'id',
+            'assigned_to_user_id'
+        )->where('file_assignments.status', 'active');
+    }
     public function getRouteKeyName()
     {
         return 'uuid';

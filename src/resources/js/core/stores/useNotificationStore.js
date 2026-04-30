@@ -153,6 +153,7 @@ export const useNotificationStore = defineStore("notification", {
 
             const userChannel = window.Echo.private(`user.${userId}`);
 
+
             // Existing Notification Listener
             userChannel.notification((notification) => {
                 this.handleIncomingNotification(notification);
@@ -171,6 +172,15 @@ export const useNotificationStore = defineStore("notification", {
                     preserveState: true
                 });
             });
+
+            // userChannel.listen('.FileAssigned', (e) => {
+            //     const page = usePage();
+            //     // This only fetches the 'files' data from the server
+            //     router.reload({
+            //         only: ['stats', 'tableData', 'recentActivity', 'overdueFiles'],
+            //         preserveScroll: true
+            //     });
+            // });
         },
             // You can still keep your public channel listeners here too
             // window.Echo.channel("clinical-alerts")

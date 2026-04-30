@@ -6,6 +6,7 @@ import { Link } from "@inertiajs/vue3";
 import { onClickOutside } from '@vueuse/core'; // Added this
 import { ChevronRightIcon } from 'lucide-vue-next';
 import { useNotificationStore } from "@/core/stores/useNotificationStore.js";
+import {registerForPush} from "@/core/services/push.js";
 
 const notify = useNotificationStore();
 
@@ -29,6 +30,23 @@ const props = defineProps({
     name: String,
     role: String
 })
+
+const permissionGranted = ref(Notification.permission === 'granted');
+
+const requestPermission = async () => {
+    try {
+        const token = await registerForPush();
+
+        if (token) {
+            permissionGranted.value = true;
+            alert("Notifications enabled successfully!");
+        } else {
+            alert("Notifications were not enabled. Please check your browser settings.");
+        }
+    } catch (error) {
+        console.error("Error during push registration:", error);
+    }
+};
 
 const userNavigation = [
     { name: 'Profile', href: '/profile' },
@@ -178,6 +196,12 @@ const userNavigation = [
                             {{ item.name }}
                         </Link>
                     </MenuItem>
+                    <button
+                        @click="requestPermission"
+                        class="hover:bg-primary/10 hover:text-primary block px-4 py-2 text-sm rounded-lg font-medium transition-colors">
+                        <span v-if="!permissionGranted">Enable Alert</span>
+                        <span v-else>Alert Enabled</span>
+                    </button>
                 </MenuItems>
             </transition>
         </Menu>

@@ -9,17 +9,29 @@ import SessionTimeout from "@/Components/ui/SessionTimeout.vue";
 import FullScreenLoader from "@/Components/ui/FullScreenLoader.vue";
 import GlobalSideBar from "@/Layouts/GlobalSideBar.vue";
 
+
 const page = usePage();
 const notify = useNotificationStore();
 const ui = useUiStore();
 
 const emit = defineEmits(['toggleSidebar'])
 
+console.log(page.props)
 onMounted(() => {
     // Just handle UI state here
     ui.startLoading()
     // Small delay to ensure initial data is painted
     setTimeout(() => ui.stopLoading(), 100)
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            .then((registration) => {
+                console.log('Service Worker registered successfully:', registration.scope);
+            })
+            .catch((err) => {
+                console.error('Registration failed:', err);
+            });
+    }
 })
 
 

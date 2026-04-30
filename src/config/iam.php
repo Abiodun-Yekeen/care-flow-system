@@ -57,7 +57,7 @@ return [
             'files:RequestFile',          // Pull/Request a file from another Dept/Registry
             'files:MergeFiles',           // Administrative merging
             'files:CloseFile',            // Mark as completed
-        ], 
+        ],
 
         'org' => [
             'org:ListDepartments',
@@ -100,3 +100,6 @@ return [
         ],
     ],
 ];
+
+
+

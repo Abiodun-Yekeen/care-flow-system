@@ -1,4 +1,4 @@
-<script setup xmlns="http://www.w3.org/1999/html">
+<script setup >
 import { ref } from 'vue';
 import { XIcon } from 'lucide-vue-next';
 import CreateTemporaryFile from "@/Pages/modules/registry/components/CreateTemporaryFile.vue";

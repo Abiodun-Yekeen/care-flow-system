@@ -117,8 +117,7 @@ class IamInitialSeeder extends Seeder
             ->action([
                 'office_files:ListRegistry',
                 'office_files:ViewDeptHistory',
-                'office_files:TreatFile',
-                'office_files:CloseFile'
+                'files:MergeFiles'
             ])
             ->resource(['arn:cf:office_files:*:*'])
             // HODs can do anything, but ONLY within their department
@@ -126,7 +125,7 @@ class IamInitialSeeder extends Seeder
             ->end()
             ->statement('external-routing')
             ->allow()
-            ->action(['files:RouteToDept', 'files:RequestFile'])
+            ->action(['files:RouteToDept', 'files:RequestFile','files:MergeFiles','office_files:TreatFile','office_files:CloseFile'])
             ->resource(['arn:cf:office_files:files:*','arn:cf:office_files:my_desk:*'])
             ->end()
             ->create('HodPolicy', 'Management oversight restricted to the HOD\'s department');

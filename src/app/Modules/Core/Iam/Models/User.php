@@ -8,11 +8,13 @@ use App\Modules\Core\Iam\Traits\HasIamRoles;
 use App\Modules\Core\Shared\Models\FcmToken;
 use App\Modules\Core\Shared\Services\Cache\CacheManager;
 use App\Modules\OfficeFiles\File\Models\File;
+use App\Modules\OfficeFiles\Movement\Models\FileAssignment;
 use App\Modules\OfficeFiles\Movement\Models\FileMovement;
 use App\Modules\Organization\Department\Models\Department;
 use Database\Factories\Modules\Access\Models\UserFactory;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -141,7 +143,22 @@ class User extends Authenticatable
         return 'user.'.$this->id;
     }
 
+    /**
+     * Get all files currently on this user's desk
+     */
+    public function activeAssignments(): HasMany
+    {
+        return $this->hasMany(FileAssignment::class, 'assigned_to_user_id')
+            ->where('status', 'active');
+    }
 
+    /**
+     * Get all files this user has sent to others
+     */
+    public function sentAssignments(): HasMany
+    {
+        return $this->hasMany(FileAssignment::class, 'assigned_by_user_id');
+    }
     protected static function newFactory()
     {
         return UserFactory::new();

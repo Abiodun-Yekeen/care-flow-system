@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import {ref, computed, watch} from 'vue';
 import {
     Search, Inbox, Send, FileText, Layers, FolderPlus,
     Info, Clock, ChevronRight, History, PenLine
@@ -11,17 +11,37 @@ import Timeline from "@/Components/page/Timeline.vue";
 import FormFilePreviewCard from "@/Components/forms/FormFilePreviewCard.vue";
 import LoadButton from "@/Components/ui/LoadButton.vue";
 import FormTextarea from "@/Components/forms/FormTextarea.vue";
-
+import { usePermissions } from '@/Composables/auth/usePermissions.js';
+import { XIcon } from 'lucide-vue-next';
+import MergeFilesModal from "@/Pages/modules/mydesk/components/MergeFilesModal.vue";
+import FormFileUpload from "@/Components/forms/FormFileUpload.vue";
+import FormSelect from "@/Components/forms/FormSelect.vue";
+import {useMetaStore} from "@/core/stores/metaStore.js";
 
 const props = defineProps({
     files: Object,
     filters: Object
 });
 
+const {can} = usePermissions()
+const metaStore = useMetaStore()
+
+const staff = ref([]);
+const loadingStaff = ref(false);
+
 const form = useForm({
     'remark': '',
     'minute': ''
 
+});
+
+const routeForm = useForm({
+    receiver_id: '',
+    remark: '',
+    scanned_file:[],
+    department:'',
+    staff:'',
+    minutes:''
 });
 
 const selectedFile = ref(null);
@@ -77,6 +97,38 @@ const isNew = (dateString) => {
     const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
     return diffHours <= 24;
 };
+
+const isMergeModalOpen = ref(false);
+const selectedFileForMerge = ref(null);
+
+const openMergeModal = (file) => {
+    selectedFileForMerge.value = file;
+    isMergeModalOpen.value = true;
+};
+
+const closeMergeModal = () => {
+    isMergeModalOpen.value = false;
+    selectedFileForMerge.value = null;
+};
+
+
+
+watch(() => routeForm.department, async (newDeptId) => {
+    if (!newDeptId) {
+        staff.value = [];
+        return;
+    }
+    loadingStaff.value = true;
+    try {
+        // The newDeptId is injected directly into the URL string
+        const response = await axios.get(route('departments.staff',newDeptId));
+        staff.value = response.data;
+    } catch (error) {
+        console.error("Error fetching staff:", error);
+    } finally {
+        loadingStaff.value = false;
+    }
+});
   const submit_treat_file = () => {
     // Check: Ensure a file is actually selected
     if (!selectedFile.value) {
@@ -259,30 +311,33 @@ const isNew = (dateString) => {
 
 
                 <div class="w-96 flex flex-col bg-white rounded-xl shadow-sm border overflow-hidden">
+
+                    <div v-if="selectedFile && can('files:MergeFiles')" class="p-4 border-b">
+                        <button @click="openMergeModal(selectedFile)" class="w-full flex items-center justify-between p-4 bg-indigo-50 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition text-left group">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-primary text-white rounded-lg shadow-sm"><Layers :size="16" /></div>
+                                <div>
+                                    <p class="text-xs font-bold text-indigo-900">Merge File</p>
+                                    <p class="text-[9px] text-primary-500">Attach to existing files</p>
+                                </div>
+
+                            </div>
+                            <ChevronRight :size="14" class="text-indigo-300 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
+
                     <div class="flex border-b bg-gray-50/50">
                         <button @click="rightTab = 'action'" :class="['flex-1 py-4 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition', rightTab === 'action' ? 'bg-white border-t-2 border-t-blue-600 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600']">
                             <PenLine :size="14" /> Treat File
                         </button>
                         <button @click="rightTab = 'history'" :class="['flex-1 py-4 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition', rightTab === 'history' ? 'bg-white border-t-2 border-t-blue-600 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600']">
-                            <History :size="14" /> Route History
+                            <History :size="14" /> Route File
                         </button>
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-5">
                         <template v-if="selectedFile">
                             <div v-if="rightTab === 'action'" class="space-y-4">
-
-                                <button class="w-full flex items-center justify-between p-4 bg-indigo-50 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition text-left group">
-                                    <div class="flex items-center gap-3">
-                                        <div class="p-2 bg-indigo-600 text-white rounded-lg shadow-sm"><Layers :size="16" /></div>
-                                        <div>
-                                            <p class="text-xs font-bold text-indigo-900">Merge File</p>
-                                            <p class="text-[9px] text-indigo-500">Attach to existing volume</p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight :size="14" class="text-indigo-300 group-hover:translate-x-1 transition-transform" />
-                                </button>
-
 
                                 <div class="mt-6 pt-6 border-t">
 
@@ -306,17 +361,83 @@ const isNew = (dateString) => {
                                     />
                                 </div>
                                 </div>
+                                <div class="mt-2 justify-center">
+                                    <LoadButton
+                                        type="button"
+                                        :loading="form.processing "
+                                        :disabled="form.processing"
+                                        @click="submit_treat_file">
+                                        {{ form.processing  ? 'Submitting...' : 'Treated' }}
+                                    </LoadButton>
+                                </div>
+
                             </div>
 
-                            <div class="mt-2 justify-center">
-                        <LoadButton
-                            type="button"
-                            :loading="form.processing "
-                            :disabled="form.processing"
-                            @click="submit_treat_file">
-                            {{ form.processing  ? 'Submitting...' : 'Treated' }}
-                        </LoadButton>
-                    </div>
+                            <div v-if="rightTab === 'history'" class="space-y-4">
+                                <div class="col-span-12 md:col-span-6">
+                                    <FormSelect
+                                        id="department"
+                                        v-model="routeForm.department"
+                                        label="Department"
+                                        required
+                                        :options="metaStore.department"
+                                        :error="routeForm.errors.department"
+                                    />
+                                </div>
+                                <div class="col-span-12 md:col-span-6">
+                                    <FormSelect
+                                        id="staff"
+                                        v-model="routeForm.staff"
+                                        label="Staff"
+                                        required
+                                        :options="staff"
+                                        :disabled="loadingStaff || !routeForm.department"
+                                        :placeholder="loadingStaff ? 'Loading staff...' : 'Select Staff'"
+                                        :error="routeForm.errors.staff"
+                                    />
+                                </div>
+
+                                <div class="col-span-12 md:col-span-6">
+                                    <FormTextarea
+                                        id="remarks"
+                                        v-model="routeForm.remark"
+                                        label="Note"
+                                        :error="routeForm.errors.remark"
+                                        :rows="2"
+                                    />
+                                </div>
+                                <div class="col-span-12 md:col-span-6">
+                                    <FormTextarea
+                                        id="minutes"
+                                        v-model="routeForm.minutes"
+                                        label="Minute"
+                                        :error="routeForm.errors.minutes"
+                                        :rows="2"
+                                    />
+                                </div>
+                                <div class="col-span-12 md:col-span-12 pt-2">
+                                    <FormFileUpload
+                                        v-model="routeForm.scanned_file"
+                                        :maxFiles="5"
+                                        accept=".jpg,.jpeg"
+                                    />
+                                    <div v-if="routeForm.errors.scanned_file" class="text-red-500 text-xs mt-1">
+                                        {{ routeForm.errors.scanned_file }}
+                                    </div>
+                                </div>
+
+                                <div class="mt-2 justify-center">
+                                    <LoadButton
+                                        type="button"
+                                        :loading="form.processing "
+                                        :disabled="form.processing"
+                                        @click="submit_treat_file">
+                                        {{ form.processing  ? 'Routing file...' : 'Route File' }}
+                                    </LoadButton>
+                                </div>
+                            </div>
+
+
                         </template>
                         <div v-else class="h-full flex items-center justify-center text-gray-300 text-xs italic">
                             No file selected
@@ -326,6 +447,13 @@ const isNew = (dateString) => {
 
             </div>
         </div>
+
+        <MergeFilesModal
+            v-if="isMergeModalOpen"
+            :show="isMergeModalOpen"
+            :primaryFile="selectedFileForMerge"
+            @close="closeMergeModal"
+        />
 
          <Teleport to="body">
                     <div v-if="isModalOpen"

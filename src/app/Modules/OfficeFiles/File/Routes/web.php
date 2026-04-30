@@ -9,7 +9,8 @@ use Inertia\Inertia;
 
 Route::middleware(['web','auth'])->prefix('my-desk')->group(function () {
     Route::get('/', [FileOverviewController::class, 'index'])->name('overview.my-desk');
-   Route::put('files/treat-file/{file}', [FileController::class, 'treat'])->name('files.treat');
+   Route::put('files/treat-file/{file}', [FileController::class, 'treatFile'])->name('files.treat');
+   Route::post('files/search-merge-file',[FileController::class, 'searchFileToMerger'])->name('files.search-merge-file');
    Route::resource('files', FileController::class);
 
 });

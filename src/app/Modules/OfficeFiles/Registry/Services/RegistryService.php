@@ -5,6 +5,7 @@ use App\Modules\Core\Iam\Models\User;
 use App\Modules\Core\Iam\Repository\Contracts\UserRepositoryInterface;
 use App\Modules\Core\Shared\Services\Firebase\FcmService;
 use App\Modules\OfficeFiles\File\Models\File;
+use App\Modules\OfficeFiles\Movement\Models\FileAssignment;
 use App\Modules\OfficeFiles\Registry\DTO\RegistryDTO;
 use App\Modules\OfficeFiles\Registry\Models\FileReceive;
 use App\Modules\OfficeFiles\Registry\Repository\Contracts\RegistryInterface;
@@ -107,6 +108,16 @@ class RegistryService
             ]);
 
             if (!$is_draft) {
+                $file->assignments()->create([
+                    'assigned_to_user_id' => $hodUserId,
+                    'assigned_by_user_id' => auth()->id(),
+                    'assignment_type' => 'submitted',
+                    'status' => 'active',
+                    'remark' =>  $dto->remark,
+                    'assigned_at' => now(),
+                    'completed_at' => null,
+                ]);
+
                 $hod = $this->userRepository->findById($hodUserId);
                 if ($hod) {
                   $this->notifyUser($user,$file,$hod);
@@ -229,7 +240,10 @@ class RegistryService
                 'acted_at' => now(),
             ]);
 
-
+            $file->currentAssignment()->update([
+                'status' => 'completed',
+                'completed_at' => now()
+            ]);
 
             //  Upload documents (Handling UploadedFile objects from dd($dto))
             $this->uploadFile($dto, $file);

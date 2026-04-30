@@ -4,6 +4,7 @@ namespace App\Modules\OfficeFiles\Registry\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Modules\OfficeFiles\File\Models\File;
 use App\Modules\OfficeFiles\Movement\Models\FileMovement;
+use App\Modules\OfficeFiles\Registry\Models\FileReceive;
 use Inertia\Inertia;
 
 class RegistryOverviewController extends Controller
@@ -13,7 +14,11 @@ class RegistryOverviewController extends Controller
             return Inertia::render('modules/overview/ModuleOverview', [
                 'stats' => [
         ['title' => 'Files Received', 'value' => File::count()],
-        ['title' => 'Submitted', 'value' => File::where('status', 'submitted')->count()],
+        ['title' => 'Submitted', 'value' => FileReceive::where('status', 'submitted')->count()],
+        ['title'=> 'Pending', 'value'=> File::where('status', 'pending')->count()],
+        ['title'=>'Draft', 'value' => FileReceive::where('status', 'draft')->count()]
+
+
         // ...
     ],
     'tableData' => File::latest()->take(5)->get()->map(fn($f) => [
