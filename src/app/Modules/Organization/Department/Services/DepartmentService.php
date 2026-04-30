@@ -8,7 +8,6 @@ use App\Modules\Organization\Department\Models\Department;
 class DepartmentService
 {
 
-
     public function __construct(
         private CacheManager $cacheManager
     )
