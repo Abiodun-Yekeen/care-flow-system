@@ -18,26 +18,48 @@ const emit = defineEmits(['toggle-sidebar'])
 </script>
 
 <template>
-    <header class="bg-secondary sticky top-0 z-50 text-white shadow-md">
-        <div class="px-4 sm:px-6 lg:px-8">
-            <div class="flex h-14 items-center justify-between gap-3">
+<!-- Inside your template -->
+<div class="flex h-14 items-center justify-between gap-2 sm:gap-3">
+<!-- Logo/Sidebar section -->
+<div class="flex items-center gap-1 flex-shrink-0">
+    <button @click="$emit('toggle-sidebar')" ...>
+        <Bars3Icon class="size-6" />
+    </button>
+    <span class="hidden xs:block font-bold text-sm tracking-tight">FTH IDO-EKITI</span>
+</div>
 
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    <button
-                        @click="$emit('toggle-sidebar')"
-                        class="rounded-md p-1.5 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-white/50"
-                        aria-label="Toggle Sidebar"
-                    >
-                        <Bars3Icon class="size-6" />
-                    </button>
+<!-- Search: Ensure it shrinks on mobile -->
+<div class="flex-1 min-w-0 max-w-md">
+    <GlobalSearch />
+</div>
 
-                    <span class="font-bold text-sm sm:text-lg tracking-tight">FTH IDO-EKITI</span>
-                </div>
-                <GlobalSearch/>
-
-                <Notification :name="user.name" :role="user.role_name"/>
-             </div>
-        </div>
-    </header>
+<!-- Notification: Prevent it from shrinking -->
+<div class="flex-shrink-0">
+    <Notification :name="user.name" :role="user.role_name"/>
+</div>
+</div>
 </template>
+<!--<template>-->
+<!--    <header class="bg-secondary sticky top-0 z-50 text-white shadow-md">-->
+<!--        <div class="px-4 sm:px-6 lg:px-8">-->
+<!--            <div class="flex h-14 items-center justify-between gap-3">-->
+
+<!--                <div class="flex items-center gap-2 flex-shrink-0">-->
+<!--                    <button-->
+<!--                        @click="$emit('toggle-sidebar')"-->
+<!--                        class="rounded-md p-1.5 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-white/50"-->
+<!--                        aria-label="Toggle Sidebar"-->
+<!--                    >-->
+<!--                        <Bars3Icon class="size-6" />-->
+<!--                    </button>-->
+
+<!--                    <span class="font-bold text-sm sm:text-lg tracking-tight">FTH IDO-EKITI</span>-->
+<!--                </div>-->
+<!--                <GlobalSearch/>-->
+
+<!--                <Notification :name="user.name" :role="user.role_name"/>-->
+<!--             </div>-->
+<!--        </div>-->
+<!--    </header>-->
+<!--</template>-->
 
