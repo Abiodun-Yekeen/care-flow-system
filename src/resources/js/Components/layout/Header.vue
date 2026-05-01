@@ -19,14 +19,14 @@ const emit = defineEmits(['toggle-sidebar'])
 
 <template>
 <!-- Inside your template -->
-<div class="flex h-14 items-center justify-between gap-2 sm:gap-3">
+<div class="flex h-14 items-center justify-between gap-2 sm:gap-3 bg-secondary text-white shadow-md">
 <!-- Logo/Sidebar section -->
 <div class="flex items-center gap-1 flex-shrink-0">
-    <button @click="$emit('toggle-sidebar')" class="rounded-md p-1.5 hover:bg-secondary focus:outline-none"
+    <button @click="$emit('toggle-sidebar')" class="rounded-md p-1.5 hover:bg-secondary focus:ring-white/50 focus:outline-none"
             aria-label="Toggle Sidebar">
         <Bars3Icon class="size-6" />
     </button>
-    <span class="hidden xs:block font-bold text-sm tracking-tight">FTH IDO-EKITI</span>
+    <span class=" xs:block font-bold text-sm text-white">FTH IDO-EKITI</span>
 </div>
 
 <!-- Search: Ensure it shrinks on mobile -->
